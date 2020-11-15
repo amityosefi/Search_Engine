@@ -16,6 +16,7 @@ class Parse:
         self.lancaster =LancasterStemmer()
 
     def parse_sentence(self, text):
+
         """
         This function tokenize, remove stop words and apply lower case for every word within the text
         :param text:
@@ -25,29 +26,41 @@ class Parse:
         text_splitted= text.split()
         stop_words = stopwords.words('english') #dsfsdfgsd
         lancaster = LancasterStemmer()
-        for i, next_i in zip(text_splitted, text_splitted[1:]):
-                word = i.strip("'").strip('"').strip(':').strip('!').strip('?').strip(',').strip('.').strip('*').strip('(').strip(')').strip('{').strip('}').strip('-').strip('+').strip('=')
-                if word not in stop_words:
-                    if (len(word) > 0):
-                        if (word[0] == '#'):
-                            self.parse_hashtags(word[1:])
-                           ## if word[1:].lower() not in self.text_tokens:
-                             ##   self.text_tokens.append(word[1:].lower().replace('_', ''))
-                            if word == word.upper():
-                                self.text_tokens.append(word.replace('_', ''))
-                            else:
-                                self.text_tokens.append(word.lower().replace('_', ''))
-                        elif (word == 'percent') or (word == 'percentage'):
-                            self.parse_percent(word)
-                        elif word.isdigit() == True:
-                            number = self.parse_numbers(i, next_i)
+        for i in range(len(text_splitted)):
+            word = self.parse_delimiters(text_splitted[i])
+            if word not in stop_words:
+                if (len(word) > 0):
+                    if (word[0] == '#'):
+                        self.parse_hashtags(word[1:])
+                        if word == word.upper():
+                            self.text_tokens.append(word.replace('_', ''))
                         else:
-                            word = word.lower()
-                            word = lancaster.stem(word)
-                            self.text_tokens.append(word)
+                            self.text_tokens.append(word.lower().replace('_', ''))
+                    elif (word == 'percent') or (word == 'percentage'):
+                        self.parse_percent(word)
+                    elif word.isdigit() or re.search(r'^-?[0-9]+\.[0-9]+$', word) or re.search(r'^-?[0-9]+\/[0-9]+$', word):
+                        if i < len(text_splitted)-1:
+                            number = self.parse_numbers(word, self.parse_delimiters(text_splitted[i+1]))
+                        else:
+                            number = self.parse_numbers(word)
+                        self.text_tokens.append(number)
+                    else:
+                        word = word.lower()
+                        word = lancaster.stem(word)
+                        self.text_tokens.append(word)
 
-        ##print(self.text_tokens)
-        ##text_tokenized = [w.lower() for w in text_tokens if w not in self.stop_words]
+        print(self.text_tokens)
+
+
+    def parse_delimiters(self, element):
+        delimiters = ['!', '?', ':', '$', '^', '&', '*', '(', ')', '.', ',' ,'[', ']','{','}',';','+','=']
+        element = str(element)
+        word = ''
+        for char in element:
+            if char not in delimiters:
+                word += char
+
+        return word.replace('-', ' ')
 
     def parse_hashtags(self, element):
 
@@ -108,17 +121,17 @@ class Parse:
 
         return term_dict
 
-    def parse_numbers(self, item, next_i):
+    def parse_numbers(self, item, next_i = ''):
         r = ['', 'K', 'M', 'B']
         if bool(re.search(r'^-?[0-9]+\/[0-9]+$', next_i)) and float(item) <= 999:
             return item + ' ' + next_i
-        if bool(re.search(r'^-?[0-9]+\/[0-9]+$', item)):
+        elif bool(re.search(r'^-?[0-9]+\/[0-9]+$', item)):
             return item
         elif (next_i == "Thousand" or next_i == "thousand") and float(item) <= 999:
             return item + "k"
-        elif (next_i == "Million" or next_i == "million") and float(item) <= 999:
+        elif (next_i == "mil" or next_i == "m" or next_i == "Million" or next_i == "million") and float(item) <= 999:
             return item + "M"
-        elif (next_i == "Billion" or next_i == "billion") and float(item) <= 999:
+        elif (next_i == "bil" or next_i == "B" or next_i == "Billion" or next_i == "billion") and float(item) <= 999:
             return item + "B"
 
         num = float(item)
