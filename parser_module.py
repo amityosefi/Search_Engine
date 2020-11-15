@@ -2,6 +2,10 @@ from functools import reduce
 
 from nltk.corpus import stopwords
 from document import Document
+from nltk.stem import LancasterStemmer
+import re
+
+
 
 
 class Parse:
@@ -9,6 +13,7 @@ class Parse:
     def _init_(self):
         self.stop_words = stopwords.words('english')
         self.text_tokens = []
+        self.lancaster =LancasterStemmer()
 
     def parse_sentence(self, text):
         """
@@ -16,11 +21,11 @@ class Parse:
         :param text:
         :return:
         """
-
         text = str(text)
         text_splitted= text.split()
         stop_words = stopwords.words('english')
-        for i in text_splitted:
+        lancaster = LancasterStemmer()
+        for i, next_i in zip(text_splitted, text_splitted[1:]):
                 word = i.strip("'").strip('"').strip(':').strip('!').strip('?').strip(',').strip('.').strip('*').strip('(').strip(')').strip('{').strip('}').strip('-').strip('+').strip('=')
                 if word not in stop_words:
                     if (len(word) > 0):
@@ -34,8 +39,11 @@ class Parse:
                                 self.text_tokens.append(word.lower().replace('_', ''))
                         elif (word == 'percent') or (word == 'percentage'):
                             self.parse_percent(word)
+                        elif word.isdigit() == True:
+                            number = self.parse_numbers(i, next_i)
                         else:
                             word = word.lower()
+                            word = lancaster.stem(word)
                             self.text_tokens.append(word)
 
         ##print(self.text_tokens)
@@ -99,6 +107,29 @@ class Parse:
                 term_dict[name] += 1
 
         return term_dict
+
+    def parse_numbers(self, item, next_i):
+        r = ['', 'K', 'M', 'B']
+        if bool(re.search(r'^-?[0-9]+\/[0-9]+$', next_i)) and float(item) <= 999:
+            return item + ' ' + next_i
+        if bool(re.search(r'^-?[0-9]+\/[0-9]+$', item)):
+            return item
+        elif (next_i == "Thousand" or next_i == "thousand") and float(item) <= 999:
+            return item + "k"
+        elif (next_i == "Million" or next_i == "million") and float(item) <= 999:
+            return item + "M"
+        elif (next_i == "Billion" or next_i == "billion") and float(item) <= 999:
+            return item + "B"
+
+        num = float(item)
+        magnitude = 0
+        while abs(num) >= 1000:
+            magnitude += 1
+            num /= 1000.0
+            if magnitude >= 3:
+                break
+        return str("%.3f" % num).strip("0").strip(".") + '' + str(r[magnitude])
+
 
     def parse_doc(self, doc_as_list):
         """
