@@ -1,46 +1,59 @@
+from functools import reduce
+
 from nltk.corpus import stopwords
 from document import Document
+from nltk.stem import LancasterStemmer
+import re
+
+
 
 
 class Parse:
 
-    def __init__(self):
+    def _init_(self):
         self.stop_words = stopwords.words('english')
         self.text_tokens = []
+        self.lancaster =LancasterStemmer()
 
     def parse_sentence(self, text):
+
         """
         This function tokenize, remove stop words and apply lower case for every word within the text
         :param text:
         :return:
         """
-
         text = str(text)
         text_splitted= text.split()
-
-        for i in text_splitted:
-                word = self.parse_delimiters(i.strip("'").strip('"'))
-                if word not in self.stop_words:
-                    if (len(word) > 0):
-                        if (word[0] == '#'):
-                            self.parse_hashtags(word[1:])
-                           ## if word[1:].lower() not in self.text_tokens:
-                             ##   self.text_tokens.append(word[1:].lower().replace('_', ''))
-                            if word == word.upper():
-                                self.text_tokens.append(word.replace('_', ''))
-                            else:
-                                self.text_tokens.append(word.lower().replace('_', ''))
-                        elif (word == 'percent') or (word == 'percentage'):
-                            self.parse_percent(word)
+        stop_words = stopwords.words('english')
+        lancaster = LancasterStemmer()
+        for i in range(len(text_splitted)):
+            word = text_splitted[i].strip("'").strip('"')
+            if word not in stop_words:
+                if (len(word) > 0):
+                    if (word[0] == '#'):
+                        self.parse_hashtags(word[1:])
+                        if word == word.upper():
+                            self.text_tokens.append(word.replace('_', ''))
                         else:
-                            word = word.lower()
-                            self.text_tokens.append(word)
+                            self.text_tokens.append(word.lower().replace('_', ''))
+                    elif (word == 'percent') or (word == 'percentage'):
+                        self.parse_percent(word)
+                    elif text_splitted[i].isdigit() or re.search(r'^-?[0-9]+\.[0-9]+$', text_splitted[i]) or re.search(r'^-?[0-9]+\/[0-9]+$', text_splitted[i]):
+                        if i < len(text_splitted)-1:
+                            number = self.parse_numbers(text_splitted[i], text_splitted[i+1])
+                        else:
+                            number = self.parse_numbers(text_splitted[i])
+                        self.text_tokens.append(number)
+                    else:
+                        word = word.lower()
+                        word = lancaster.stem(word)
+                        self.text_tokens.append(word)
 
-        print(self.text_tokens)
-        ##text_tokenized = [w.lower() for w in text_tokens if w not in self.stop_words]
+    # print(self.text_tokens)
+
 
     def parse_delimiters(self, element):
-        delimiters = ['!', '?', ':', '$', '^', '&', '*', '(', ')', '.', ',' '[', ']', '{', '}', ';', '+', '=']
+        delimiters = ['!', '?', ':', '$', '^', '&', '*', '(', ')', '.', ',' '[', ']','{','}',';','+','=']
         element = str(element)
         word = ''
         for char in element:
@@ -53,7 +66,7 @@ class Parse:
 
         if element == element.upper():
             self.text_tokens.append(element.replace('_', ''))
-        elif element != element.lower(): 
+        elif element != element.lower():
             name = ''
             for c in element:
                 if c.isupper():
@@ -107,6 +120,29 @@ class Parse:
                 term_dict[name] += 1
 
         return term_dict
+
+    def parse_numbers(self, item, next_i = ''):
+        r = ['', 'K', 'M', 'B']
+        if bool(re.search(r'^-?[0-9]+\/[0-9]+$', next_i)) and float(item) <= 999:
+            return item + ' ' + next_i
+        elif bool(re.search(r'^-?[0-9]+\/[0-9]+$', item)):
+            return item
+        elif (next_i == "Thousand" or next_i == "thousand") and float(item) <= 999:
+            return item + "k"
+        elif (next_i == "Million" or next_i == "million") and float(item) <= 999:
+            return item + "M"
+        elif (next_i == "Billion" or next_i == "billion") and float(item) <= 999:
+            return item + "B"
+
+        num = float(item)
+        magnitude = 0
+        while abs(num) >= 1000:
+            magnitude += 1
+            num /= 1000.0
+            if magnitude >= 3:
+                break
+        return str("%.3f" % num).strip("0").strip(".") + '' + str(r[magnitude])
+
 
     def parse_doc(self, doc_as_list):
         """
