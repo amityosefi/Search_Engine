@@ -29,8 +29,8 @@ def run_engine():
     # Iterate over every document in the file
     for idx, document in enumerate(documents_list):
         # parse the document
-        ##print(number_of_documents)
-        parsed_document = p.parse_doc(document)
+        print(number_of_documents)
+        parsed_document = p.parse_doc(documents_list[30010])
         number_of_documents += 1
 
         # index the document data
@@ -40,13 +40,12 @@ def run_engine():
     utils.save_obj(indexer.inverted_idx, "inverted_idx")
     utils.save_obj(indexer.postingDict, "posting")
 
+
 """
 def load_index():
     print('Load inverted index')
     inverted_index = utils.load_obj("inverted_idx")
     return inverted_index
-
-
 def search_and_rank_query(query, inverted_index, k):
     p = Parse()
     query_as_list = p.parse_sentence(query)
@@ -59,7 +58,6 @@ def search_and_rank_query(query, inverted_index, k):
 
 def main():
     run_engine()
-
 
     query = input("Please enter a query: ")
     k = int(input("Please enter number of docs to retrieve: "))

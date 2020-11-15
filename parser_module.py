@@ -23,7 +23,7 @@ class Parse:
         """
         text = str(text)
         text_splitted= text.split()
-        stop_words = stopwords.words('english')
+        stop_words = stopwords.words('english') #dsfsdfgsd
         lancaster = LancasterStemmer()
         for i, next_i in zip(text_splitted, text_splitted[1:]):
                 word = i.strip("'").strip('"').strip(':').strip('!').strip('?').strip(',').strip('.').strip('*').strip('(').strip(')').strip('{').strip('}').strip('-').strip('+').strip('=')
