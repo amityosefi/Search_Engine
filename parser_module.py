@@ -27,7 +27,7 @@ class Parse:
         stop_words = stopwords.words('english')
         lancaster = LancasterStemmer()
         for i in range(len(text_splitted)):
-            word = text_splitted[i].strip("'").strip('"')
+            word = self.parse_delimiters(text_splitted[i])
             if word not in stop_words:
                 if (len(word) > 0):
                     if (word[0] == '#'):
@@ -38,22 +38,22 @@ class Parse:
                             self.text_tokens.append(word.lower().replace('_', ''))
                     elif (word == 'percent') or (word == 'percentage'):
                         self.parse_percent(word)
-                    elif text_splitted[i].isdigit() or re.search(r'^-?[0-9]+\.[0-9]+$', text_splitted[i]) or re.search(r'^-?[0-9]+\/[0-9]+$', text_splitted[i]):
+                    elif word.isdigit() or re.search(r'^-?[0-9]+\.[0-9]+$', word) or re.search(r'^-?[0-9]+\/[0-9]+$', word):
                         if i < len(text_splitted)-1:
-                            number = self.parse_numbers(text_splitted[i], text_splitted[i+1])
+                            number = self.parse_numbers(word, self.parse_delimiters(text_splitted[i+1]))
                         else:
-                            number = self.parse_numbers(text_splitted[i])
+                            number = self.parse_numbers(word)
                         self.text_tokens.append(number)
                     else:
                         word = word.lower()
                         word = lancaster.stem(word)
                         self.text_tokens.append(word)
 
-    # print(self.text_tokens)
+        print(self.text_tokens)
 
 
     def parse_delimiters(self, element):
-        delimiters = ['!', '?', ':', '$', '^', '&', '*', '(', ')', '.', ',' '[', ']','{','}',';','+','=']
+        delimiters = ['!', '?', ':', '$', '^', '&', '*', '(', ')', '.', ',' ,'[', ']','{','}',';','+','=']
         element = str(element)
         word = ''
         for char in element:
@@ -129,9 +129,9 @@ class Parse:
             return item
         elif (next_i == "Thousand" or next_i == "thousand") and float(item) <= 999:
             return item + "k"
-        elif (next_i == "Million" or next_i == "million") and float(item) <= 999:
+        elif (next_i == "mil" or next_i == "m" or next_i == "Million" or next_i == "million") and float(item) <= 999:
             return item + "M"
-        elif (next_i == "Billion" or next_i == "billion") and float(item) <= 999:
+        elif (next_i == "bil" or next_i == "B" or next_i == "Billion" or next_i == "billion") and float(item) <= 999:
             return item + "B"
 
         num = float(item)
