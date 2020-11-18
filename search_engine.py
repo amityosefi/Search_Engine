@@ -30,7 +30,7 @@ def run_engine():
     for idx, document in enumerate(documents_list):
         # parse the document
         print(number_of_documents)
-        parsed_document = p.parse_doc(documents_list[30010])
+        parsed_document = p.parse_doc(documents_list[5605])
         number_of_documents += 1
 
         # index the document data
