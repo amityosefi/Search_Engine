@@ -1,4 +1,6 @@
 from nltk.corpus import stopwords
+from spellchecker import SpellChecker
+
 from document import Document
 from nltk.stem import LancasterStemmer
 import re
@@ -7,6 +9,7 @@ import re
 
 
 class Parse:
+    corpus_dict = {}
 
     def init(self):
         self.stop_words = stopwords.words('english')
@@ -24,6 +27,7 @@ class Parse:
         text_splitted= text.split()
         stop_words = stopwords.words('english')
         ##lancaster = LancasterStemmer()
+
         i = 0
         while (i < len(text_splitted)-1):
             word = str(self.parse_delimiters(text_splitted[i]))
@@ -40,6 +44,7 @@ class Parse:
                         elif (next_word == 'percent') or (next_word == 'percentage'):
                             self.parse_percent(word)
                             i += 1
+                            continue
                     else:
                         number = self.parse_numbers(word)
                     self.text_tokens.append(number)
@@ -48,12 +53,17 @@ class Parse:
                     i += iterations
                     continue
                 else:
-                    word = word.lower()
+                    ##word = word.lower()
                     ##word = lancaster.stem(word)
+                    ##spell = SpellChecker()
+                    ##new_word = spell.correction(word)
+                    ##print(new_word)
+                    ##end = time.time()
+                    ##print('the time is: ' + str(end - start))
                     self.text_tokens.append(word)
             i += 1
 
-        print(self.text_tokens)
+       ##print(self.text_tokens)
 
     def parse_quote(self, word, i, text_splitted):
 
@@ -138,6 +148,8 @@ class Parse:
                 name += character
             elif (len(name) > 1) or (
                     (len(name) == 1) and ('a' <= name <= 'z') or ('A' <= name <= 'Z') or ('0' <= name <= '9')):
+                ##if name.isdigit():
+                  ##  name = self.parse_numbers(name)
                 if name not in term_dict.keys():
                     term_dict[name] = 1
                 else:
@@ -145,6 +157,8 @@ class Parse:
                 name = ''
         if (len(name) > 1) or (
                 (len(name) == 1) and ('a' <= name <= 'z') or ('A' <= name <= 'Z') or ('0' <= name <= '9')):
+            ##if name.isdigit():
+              ##  name = self.parse_numbers(name)
             if name not in term_dict.keys():
                 term_dict[name] = 1
             else:
@@ -161,9 +175,9 @@ class Parse:
             return item
         elif (next_i == "Thousand" or next_i == "thousand") and float(item) <= 999:
             return item + "K"
-        elif (next_i == "Million" or next_i == "million") and float(item) <= 999:
+        elif (next_i == "M" or next_i == "m" or next_i == "Million" or next_i == "million") and float(item) <= 999:
             return item + "M"
-        elif (next_i == "Billion" or next_i == "billion") and float(item) <= 999:
+        elif (next_i == "B" or next_i == "b" or next_i == "Billion" or next_i == "billion") and float(item) <= 999:
             return item + "B"
 
         num = float(item)
@@ -177,7 +191,7 @@ class Parse:
 
 
     def parse_doc(self, doc_as_list):
-        """
+        """commi
         This function takes a tweet document as list and break it into different fields
         :param doc_as_list: list re-preseting the tweet.
         :return: Document object with corresponding fields.
@@ -219,6 +233,10 @@ class Parse:
             else:
                 term_dict[term] += 1
 
+        Parse.corpus_dict.update(term_dict)
+        print(Parse.corpus_dict)
+
         document = Document(tweet_id, tweet_date, full_text, url, retweet_text, retweet_url, quote_text,
                             quote_url, term_dict, doc_length)
+
         return document

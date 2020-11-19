@@ -7,7 +7,6 @@ from indexer import Indexer
 import utils
 import os
 
-
 def run_engine():
     """
     :return:
@@ -20,17 +19,19 @@ def run_engine():
     p = Parse()
     indexer = Indexer(config)
 
-    start = time.time()
+
+    ##start = time.time()
     documents_list = r.read_dir()
-    end = time.time() - start
-    print(end)
-    print(len(documents_list))
+    ##end = time.time() - start
+    ##print(end)
+    ##print(len(documents_list))
+
 
     # Iterate over every document in the file
     for idx, document in enumerate(documents_list):
         # parse the document
         print(number_of_documents)
-        parsed_document = p.parse_doc(documents_list[5605])
+        parsed_document = p.parse_doc(document)
         number_of_documents += 1
 
         # index the document data
@@ -40,13 +41,12 @@ def run_engine():
     utils.save_obj(indexer.inverted_idx, "inverted_idx")
     utils.save_obj(indexer.postingDict, "posting")
 
+
 """
 def load_index():
     print('Load inverted index')
     inverted_index = utils.load_obj("inverted_idx")
     return inverted_index
-
-
 def search_and_rank_query(query, inverted_index, k):
     p = Parse()
     query_as_list = p.parse_sentence(query)
@@ -59,7 +59,6 @@ def search_and_rank_query(query, inverted_index, k):
 
 def main():
     run_engine()
-
 
     query = input("Please enter a query: ")
     k = int(input("Please enter number of docs to retrieve: "))
