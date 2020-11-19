@@ -7,7 +7,7 @@ class Indexer:
     def __init__(self, config):
         self.inverted_idx = {}
         self.postingDict = {}
-        self.config = config
+        self.config = config #sdf
 
     def add_new_doc(self, document):
         """
