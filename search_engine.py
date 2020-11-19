@@ -7,7 +7,6 @@ from indexer import Indexer
 import utils
 import os
 
-
 def run_engine():
     """
     :return:
@@ -20,17 +19,19 @@ def run_engine():
     p = Parse()
     indexer = Indexer(config)
 
-    start = time.time()
+
+    ##start = time.time()
     documents_list = r.read_dir()
-    end = time.time() - start
-    print(end)
-    print(len(documents_list))
+    ##end = time.time() - start
+    ##print(end)
+    ##print(len(documents_list))
+
 
     # Iterate over every document in the file
     for idx, document in enumerate(documents_list):
         # parse the document
         print(number_of_documents)
-        parsed_document = p.parse_doc(documents_list[30010])
+        parsed_document = p.parse_doc(document)
         number_of_documents += 1
 
         # index the document data
