@@ -68,7 +68,7 @@ class Parse:
                     self.text_tokens.append(word)
             i += 1
 
-        print(self.text_tokens)
+        ##print(self.text_tokens)
 
     def parse_quote(self, word, i, text_splitted):
 
@@ -209,7 +209,7 @@ class Parse:
         quote_url = doc_as_list[7]
         term_dict = {}
         self.text_tokens = []
-        print(full_text)
+        ##print(full_text)
         self.parse_sentence(full_text)
 
         if (url is not None) and (url != '{}'):
@@ -237,6 +237,8 @@ class Parse:
                 term_dict[term] += 1
 
         Parse.corpus_dict.update(term_dict)
+
+        ##print(term_dict)
 
         document = Document(tweet_id, tweet_date, full_text, url, retweet_text, retweet_url, quote_text,
                             quote_url, term_dict, doc_length)
