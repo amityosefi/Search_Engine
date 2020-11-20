@@ -17,13 +17,13 @@ class Indexer:
         Saved information is captures via two dictionaries ('inverted index' and 'posting')
         :param document: a document need to be indexed.
         :return: -
-        """
+
         document_dictionary = document.term_doc_dictionary
 
         self.doc_counter += 1
         # Go over each term in the doc
         for term in document_dictionary:
-            print(document_dictionary)
+            ##print(document_dictionary)
             try:
                 # Update inverted index and posting
                 if term not in self.inverted_idx.keys():
@@ -41,7 +41,7 @@ class Indexer:
                 self.postingDict[term].append([document.tweet_id, document_dictionary[term],
                                                float(document_dictionary[term] / document.doc_length)])
 
-                print(self.postingDict)
+                ##print(self.postingDict)
 
             except:
                 print('problem with the following key {}'.format(term[0]))
@@ -60,7 +60,7 @@ class Indexer:
                 self.postingcounter[posting_name][0] += 1
 
             self.postingDict.clear()
-"""
+
             if (self.doc_counter % 20000 == 0):
                 for word in self.inverted_idx:
                     word = str(word)
@@ -69,4 +69,4 @@ class Indexer:
                         value = self.inverted_idx[word]
                         self.inverted_idx.pop(word)
                         self.inverted_idx[lower_word] = value
-"""
+     """

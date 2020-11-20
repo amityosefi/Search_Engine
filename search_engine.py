@@ -29,7 +29,7 @@ def run_engine():
     # Iterate over every document in the file
     for idx, document in enumerate(documents_list):
         # parse the document
-        ##print(number_of_documents)
+        print(number_of_documents)
         parsed_document = p.parse_doc(document)
         number_of_documents += 1
 

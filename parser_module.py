@@ -25,26 +25,40 @@ class Parse:
         ##lancaster = LancasterStemmer()
 
         i = 0
-        while (i < len(text_splitted)-1):
-            word = str(self.parse_delimiters(text_splitted[i]))
-            if (len(word) > 0) and (word.isspace() == False) and word.lower() not in stop_words:
-                if (word[0] == '#'):
-                    self.parse_hashtags(word[1:])
-                    self.text_tokens.append(word.lower().replace('_', ''))
+        while (i < len(text_splitted)):
+            word = text_splitted[i]
+            try:
+                if (word[len(word)-1] == '%'):
+                        ##word = float(word.strip('%'))
+                        if word.isdigit():
+                            number = self.parse_numbers(word)
+                            percent_number = str(number) + '%'
+                            self.text_tokens.append(percent_number)
+                            continue
                 elif word.isdigit() or re.search(r'^-?[0-9]+\.[0-9]+$', word) or re.search(r'^-?[0-9]+\/[0-9]+$', word):
-                    if i < len(text_splitted)-1:
-                        next_word = self.parse_delimiters(text_splitted[i+1])
+                    if i < len(text_splitted) - 1:
+                        next_word = self.parse_delimiters(text_splitted[i + 1])
                         number = self.parse_numbers(word, next_word)
                         if number.endswith('K') or number.endswith('B') or number.endswith('M'):
                             i += 1
                         elif (next_word == 'percent') or (next_word == 'percentage'):
-                            self.parse_percent(word)
+                            number = str(word) + '%'
                             i += 1
-                            continue
                     else:
                         number = self.parse_numbers(word)
                     self.text_tokens.append(number)
-                elif word[0] == '"' or word[0] == "'":
+                    i += 1
+                    continue
+            except:
+                ## token is not a number
+                word = ''
+
+            word = str(self.parse_delimiters(word))
+            if (len(word) > 0) and (word.isspace() == False) and word.lower() not in stop_words:
+                if (word[0] == '#'):
+                    self.parse_hashtags(word[1:])
+                    self.text_tokens.append(word.lower().replace('_', ''))
+                if word[0] == '"' or word[0] == "'" or word[0] == '‘' or word[0] == '’':
                     iterations = self.parse_quote(word, i, text_splitted)
                     i += iterations
                     continue
@@ -54,14 +68,14 @@ class Parse:
                     self.text_tokens.append(word)
             i += 1
 
-       ##print(self.text_tokens)
+        print(self.text_tokens)
 
     def parse_quote(self, word, i, text_splitted):
 
             start_iterations = i
             word = str(word)
-            if word[len(word) - 1] == '"' or word[len(word) - 1] == "'":
-                self.text_tokens.append(word.upper().strip('"').strip('"'))
+            if word[len(word) - 1] == '"' or word[len(word) - 1] == "'" or word[len(word) - 1] == '‘' or word[len(word) - 1] == '’':
+                self.text_tokens.append(word.upper().strip('"').strip('"').strip('‘'))
             else:
                 quote = word
                 while True:
@@ -69,23 +83,23 @@ class Parse:
                         next_word = self.parse_delimiters(text_splitted[i + 1])
                         if len(next_word) == 0:
                             i += 1
-                        elif (next_word[len(next_word) - 1] != "'") and (next_word[len(next_word) - 1] != '"'):
+                        elif (next_word[len(next_word) - 1] == "'") or (next_word[len(next_word) - 1] == '"') or (next_word[len(next_word)-1] == '‘') and (next_word[len(next_word)-1] == '’'):
                             quote += ' ' + next_word
-                            i += 1
-                        else:
-                            quote += ' ' + next_word
-                            self.text_tokens.append(quote.upper().strip('"').strip("'"))
+                            self.text_tokens.append(quote.upper().strip('"').strip("'").strip('‘').strip('’'))
                             i += 1
                             break
+                        else:
+                            quote += ' ' + next_word
+                            i += 1
                     elif i == (len(text_splitted) - 1):
-                        self.text_tokens.append(quote.upper().strip('"').strip("'"))
+                        self.text_tokens.append(quote.upper().strip('"').strip("'").strip('‘').strip('’'))
                         break
 
             return i - start_iterations + 1
 
 
     def parse_delimiters(self, element):
-        delimiters = ['!', '?', ':', '^', '&', '*', '(', ')', '.', ',', '[', ']','{','}',';', '=']
+        delimiters = ['!', '?', ':', '^', '&', '*', '(', ')', '.', ',', '[', ']','{','}',';', '=', '…']
         element = str(element)
         word = ''
         for char in element:
@@ -124,12 +138,6 @@ class Parse:
                 else:
                     name = name.lower().replace('_', '')
                     self.text_tokens.append(name)
-
-    def parse_percent(self, word):
-
-        element = word + '%'
-        self.text_tokens.append(element)
-       ## self.text_tokens[index - 1: index + 1] = [reduce(lambda i, j: i + j, self.text_tokens[index - 1: index + 1])]
 
     def parse_url(self, term_dict, url):
         stop_words = stopwords.words('english')
@@ -201,6 +209,7 @@ class Parse:
         quote_url = doc_as_list[7]
         term_dict = {}
         self.text_tokens = []
+        print(full_text)
         self.parse_sentence(full_text)
 
         if (url is not None) and (url != '{}'):
