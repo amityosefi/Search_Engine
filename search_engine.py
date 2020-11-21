@@ -17,7 +17,7 @@ def run_engine():
     config = ConfigClass()
     r = ReadFile(corpus_path=config.get__corpusPath())
     p = Parse()
-    indexer = Indexer(config)
+    indexer = Indexer(corpus_path=config.get__corsavePath())
 
 
     ##start = time.time()
@@ -31,7 +31,12 @@ def run_engine():
     for idx, document in enumerate(documents_list):
         # parse the document
         print(number_of_documents)
+        #start = time.time()
+        # parsed_document = p.parse_doc(documents_list[982])
         parsed_document = p.parse_doc(document)
+        #end = time.time() - start
+        #print(end)
+
         number_of_documents += 1
 
         # index the document data
