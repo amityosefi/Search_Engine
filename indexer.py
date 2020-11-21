@@ -31,32 +31,21 @@ class Indexer:
                 if term not in self.inverted_idx.keys():
                     self.inverted_idx[term] = 1
                     self.postingcounter[term[0]] = 1
+                    self.postingDict[term] = [[document.tweet_id, document_dictionary[term],
+                                              float(document_dictionary[term] / document.doc_length)]]
                 else:
                     self.inverted_idx[term] += 1
                     self.postingcounter[term[0]] += 1
-
-                posting_name = str(term[0]).lower()
-                # if posting_name not in self.postingDict.keys():
-                #     self.postingcounter += 1
-                # else:
-                #     self.postingcounter += 1
+                    self.postingDict[term] += [[document.tweet_id, document_dictionary[term],
+                                              float(document_dictionary[term] / document.doc_length)]]
 
 
-                self.postingDict[term] = [document.tweet_id, document_dictionary[term],
-                                               float(document_dictionary[term] / document.doc_length)]
                 # print(self.postingDict)
-                if self.postingcounter[term[0]] == 100:
+                if self.postingcounter[term[0]] == 100: #add to posting file
                     self.uploadPostingFile(term[0])
 
             except:
                 print('problem with the following key {}'.format(term[0]))
-
-
-
-
-
-
-
 
     def uploadPostingFile(self, c):
         for term in self.postingDict:

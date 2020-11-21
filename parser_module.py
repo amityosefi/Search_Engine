@@ -246,7 +246,7 @@ class Parse:
 
         ##Parse.corpus_dict.update(term_dict)
 
-        print(term_dict)
+        # print(term_dict)
 
         document = Document(tweet_id, tweet_date, full_text, url, retweet_text, retweet_url, quote_text,
                             quote_url, term_dict, doc_length)
