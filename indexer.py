@@ -64,17 +64,17 @@ class Indexer:
                     self.postingcounter[posting_name] = 0
 
                 if (len(self.terms_idx[posting_name]) == 5000):
-                    sorted_letter_lst = sorted(self.terms_idx[posting_name])
-                    letter_lst = list(dict.fromkeys(sorted_letter_lst)) #remove duplicates
+                    sorted_term_lst = sorted(self.terms_idx[posting_name])
+                    term_lst = list(dict.fromkeys(sorted_term_lst)) #remove duplicates
                     self.terms_idx[posting_name] = []
-                    self.uploadPostingFile(letter_lst, posting_name)
+                    self.uploadPostingFile(term_lst, posting_name)
 
             except:
                 print('problem with the following key {}'.format(term[0]))
 
-    def uploadPostingFile(self, letter_lst, c):
+    def uploadPostingFile(self, term_lst, c):
         posting_name = c + str(self.postingcounter[c])
-        for term in letter_lst:
+        for term in term_lst:
             with open(self.config + '\\' + posting_name + '.pkl', 'ab') as f:
                 pickle.dump(self.postingDict[term], f)
                 self.postingDict.pop(term)

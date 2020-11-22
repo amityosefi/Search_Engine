@@ -22,7 +22,6 @@ class Parse:
         text_splitted= text.split()
         #stop_words = stopwords.words('english')
         ##lancaster = LancasterStemmer()
-        # print(text)
         i = 0
         while i < len(text_splitted):
             word = text_splitted[i]
@@ -101,24 +100,6 @@ class Parse:
                         break
 
             return i - start_iterations + 1
-
-    """
-    def parse_delimiters(self, element):
-        delimiters = ['!', '?', ':', '^', '&', '*', '(', ')', '.', ',', '[', ']','{','}',';', '=', '…']
-        regrex_pattern = re.compile(pattern="["
-                                            u"\U0001F600-\U0001F64F"  # emoticons
-                                            u"\U0001F300-\U0001F5FF"  # symbols & pictographs
-                                            u"\U0001F680-\U0001F6FF"  # transport & map symbols
-                                            u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
-                                            "]+", flags=re.UNICODE)
-        element = str(element)
-        word = ''
-        for char in element:
-            if char not in delimiters:
-                word += char
-
-        return regrex_pattern.sub(r'', word).replace('-', ' ').replace('+', ' ')
-    """
 
     def parse_hashtags(self, element):
 
