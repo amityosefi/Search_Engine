@@ -19,25 +19,24 @@ class Parse:
         :param text:
         :return:
         """
-        text = str(text)
         text_splitted= text.split()
-        stop_words = stopwords.words('english')
+        #stop_words = stopwords.words('english')
         ##lancaster = LancasterStemmer()
-
+        # print(text)
         i = 0
-        while (i < len(text_splitted)):
+        while i < len(text_splitted):
             word = text_splitted[i]
             try:
-                if (word[len(word)-1] == '%'):
-                        ##word = float(word.strip('%'))
-                        if word.isdigit():
-                            number = self.parse_numbers(word)
-                            percent_number = str(number) + '%'
-                            self.text_tokens.append(percent_number)
-                            continue
+                word = re.sub('[^A-z%_@#.,!?$/0-9]', '', word)
+                if word[len(word) - 1] == '%':
+                    if word.isdigit():
+                        number = self.parse_numbers(word)
+                        percent_number = str(number) + '%'
+                        self.text_tokens.append(percent_number)
+                        continue
                 elif word.isdigit() or re.search(r'^-?[0-9]+\.[0-9]+$', word) or re.search(r'^-?[0-9]+\/[0-9]+$', word):
                     if i < len(text_splitted) - 1:
-                        next_word = self.parse_delimiters(text_splitted[i + 1])
+                        next_word = re.sub('[^A-z%_@#.,!?$/0-9]', '', text_splitted[i + 1])
                         number = self.parse_numbers(word, next_word)
                         if number.endswith('K') or number.endswith('B') or number.endswith('M'):
                             i += 1
@@ -53,19 +52,25 @@ class Parse:
                 ## token is not a number
                 word = ''
 
-            word = str(self.parse_delimiters(word))
-            if (len(word) > 0) and (word.isspace() == False) and word.lower() not in stop_words:
-                if (word[0] == '#'):
-                    self.parse_hashtags(word[1:])
-                    self.text_tokens.append(word.lower().replace('_', ''))
-                if word[0] == '"' or word[0] == "'" or word[0] == '‘' or word[0] == '’':
-                    iterations = self.parse_quote(word, i, text_splitted)
-                    i += iterations
-                    continue
-                else:
-                    ##word = word.lower()
-                    ##word = lancaster.stem(word)
-                    self.text_tokens.append(word)
+            if word.startswith('https'):
+                i += 1
+                continue
+
+            word = re.sub(r'([?!,.]+)',r',',word)
+            words = word.split(',')
+            for word in words:
+                if (len(word) > 0) and (word.isspace() == False) and word.lower() not in self.stop_words:
+                    if (word[0] == '#'):
+                        self.parse_hashtags(word[1:])
+                        self.text_tokens.append(word.lower().replace('_', ''))
+                    elif word[0] == '"' or word[0] == "'" or word[0] == '‘' or word[0] == '’':
+                        iterations = self.parse_quote(word, i, text_splitted)
+                        i += iterations
+                        continue
+                    else:
+                        ##word = word.lower()
+                        ##word = lancaster.stem(word)
+                        self.text_tokens.append(word)
             i += 1
 
         ##print(self.text_tokens)
@@ -80,7 +85,7 @@ class Parse:
                 quote = word
                 while True:
                     if i < len(text_splitted) - 1:
-                        next_word = self.parse_delimiters(text_splitted[i + 1])
+                        next_word = re.sub('[^A-z%_@#.,!?$/0-9]', '', text_splitted[i + 1])
                         if len(next_word) == 0:
                             i += 1
                         elif (next_word[len(next_word) - 1] == "'") or (next_word[len(next_word) - 1] == '"') or (next_word[len(next_word)-1] == '‘') and (next_word[len(next_word)-1] == '’'):
@@ -97,16 +102,23 @@ class Parse:
 
             return i - start_iterations + 1
 
-
+    """
     def parse_delimiters(self, element):
         delimiters = ['!', '?', ':', '^', '&', '*', '(', ')', '.', ',', '[', ']','{','}',';', '=', '…']
+        regrex_pattern = re.compile(pattern="["
+                                            u"\U0001F600-\U0001F64F"  # emoticons
+                                            u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+                                            u"\U0001F680-\U0001F6FF"  # transport & map symbols
+                                            u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
+                                            "]+", flags=re.UNICODE)
         element = str(element)
         word = ''
         for char in element:
             if char not in delimiters:
                 word += char
 
-        return word.replace('-', ' ').replace('+', ' ')
+        return regrex_pattern.sub(r'', word).replace('-', ' ').replace('+', ' ')
+    """
 
     def parse_hashtags(self, element):
 
@@ -152,6 +164,7 @@ class Parse:
                   ##  name = self.parse_numbers(name)
                 if name.lower() not in stop_words:
                     if name not in term_dict.keys():
+                        name = str(name).lower()
                         term_dict[name] = 1
                     else:
                         term_dict[name] += 1
@@ -162,24 +175,27 @@ class Parse:
               ##  name = self.parse_numbers(name)
             if name.lower() not in stop_words:
                 if name not in term_dict.keys():
+                    name = str(name).lower()
                     term_dict[name] = 1
                 else:
                     term_dict[name] += 1
 
         return term_dict
 
-    def parse_numbers(self, item, next_i = ''):
+    def parse_numbers(item, next_i=''):
         r = ['', 'K', 'M', 'B']
 
-        if bool(re.search(r'^-?[0-9]+\/[0-9]+$', next_i)) and float(item) <= 999:
+        if bool(re.search(r'^-?[0-9]+\.[0-9]+$', item)):
+            return item
+        elif bool(re.search(r'^-?[0-9]+\/[0-9]+$', next_i)) and float(item) <= 999:
             return item + ' ' + next_i
         elif bool(re.search(r'^-?[0-9]+\/[0-9]+$', item)):
             return item
-        elif (next_i == "Thousand" or next_i == "thousand") and float(item) <= 999:
+        elif (next_i == "Thousand" or next_i == "thousand") and float(item) <= 9999:
             return item + "K"
-        elif (next_i == "M" or next_i == "m" or next_i == "Million" or next_i == "million") and float(item) <= 999:
+        elif (next_i == "M" or next_i == "m" or next_i == "Million" or next_i == "million") and float(item) <= 9999:
             return item + "M"
-        elif (next_i == "B" or next_i == "b" or next_i == "Billion" or next_i == "billion") and float(item) <= 999:
+        elif (next_i == "B" or next_i == "b" or next_i == "Billion" or next_i == "billion") and float(item) <= 9999:
             return item + "B"
 
         num = float(item)
@@ -225,18 +241,19 @@ class Parse:
         if url_retweet_url_index != -1:
             url_retweet_url = str_retweet_url[url_retweet_url_index:]
             if (url_retweet_url is not None) and (url_retweet_url != '{}'):
-                updated_dict = self.parse_url(term_dict, retweet_url)
+                updated_dict = self.parse_url(term_dict, url_retweet_url)
                 term_dict = updated_dict
 
         doc_length = len(self.text_tokens)  # after text operations.4
 
         for term in self.text_tokens:
             if term not in term_dict.keys():
+                term = str(term).lower()
                 term_dict[term] = 1
             else:
                 term_dict[term] += 1
 
-        Parse.corpus_dict.update(term_dict)
+        # Parse.corpus_dict.update(term_dict)
 
         ##print(term_dict)
 

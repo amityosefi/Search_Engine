@@ -1,7 +1,7 @@
 class ConfigClass:
     def __init__(self):
         self.corpusPath = 'C:\\Users\\user\\Documents\\temp\\Data'
-        self.savedFileMainFolder = ''
+        self.savedFileMainFolder = 'C:\\Users\\user\\Documents\\temp\\posting'
         self.saveFilesWithStem = self.savedFileMainFolder + "/WithStem"
         self.saveFilesWithoutStem = self.savedFileMainFolder + "/WithoutStem"
         self.toStem = False
@@ -10,3 +10,6 @@ class ConfigClass:
 
     def get__corpusPath(self):
         return self.corpusPath
+
+    def get_savedFileMainFolder(self):
+        return self.savedFileMainFolder

@@ -18,20 +18,23 @@ def run_engine():
     config = ConfigClass()
     r = ReadFile(corpus_path=config.get__corpusPath())
     p = Parse()
-    indexer = Indexer(config)
+    indexer = Indexer(corpus_path=config.get_savedFileMainFolder())
 
-    start = time.time()
+    start_reader = time.time()
     documents_list = r.read_dir()
-    end = time.time() - start
-    print(end)
-    print(len(documents_list))
+    end_reader = time.time() - start_reader
+    print("Reader takes" + str(end_reader) + "seconds")
 
+    start_parsing = time.time()
     # Iterate over every document in the file
     for idx, document in enumerate(documents_list):
         # parse the document
         print(number_of_documents)
         parsed_document = p.parse_doc(document)
         number_of_documents += 1
+   ## end_parsing = time.time() - start_parsing
+    ##print(end_parsing)
+    ##print("Parser takes" + str(end_parsing) + "seconds")
 
         # index the document data
         indexer.add_new_doc(parsed_document)
