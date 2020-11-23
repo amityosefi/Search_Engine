@@ -10,6 +10,7 @@ class Parse:
 
     def __init__(self):
         self.stop_words = stopwords.words('english')
+        self.stop_words.extend(["RT", "rt", "rT", "Rt"])
         ##self.lancaster =LancasterStemmer()
 
     def parse_sentence(self, text):
@@ -28,11 +29,21 @@ class Parse:
             try:
                 word = re.sub('[^A-z%_@#.,!?$/0-9]', '', word)
                 if word[len(word) - 1] == '%':
-                    if word.isdigit():
+                    word = word[:len(word)-1]
+                    if word.isdigit() or re.search(r'^-?[0-9]+\.[0-9]+$', word) or re.search(r'^-?[0-9]+\/[0-9]+$', word):
                         number = self.parse_numbers(word)
                         percent_number = str(number) + '%'
                         self.text_tokens.append(percent_number)
                         continue
+                    else:
+                        if word == '%':
+                            self.text_tokens.append('1%')
+                        else:
+                            word = re.sub('[^A-z.0-9]', '', word)
+                            if word == '':
+                                i += 1
+                                continue
+                        print("hellp")
                 elif word.isdigit() or re.search(r'^-?[0-9]+\.[0-9]+$', word) or re.search(r'^-?[0-9]+\/[0-9]+$', word):
                     if i < len(text_splitted) - 1:
                         next_word = re.sub('[^A-z%_@#.,!?$/0-9]', '', text_splitted[i + 1])
@@ -55,13 +66,20 @@ class Parse:
                 i += 1
                 continue
 
-            word = re.sub(r'([?!,.]+)',r',',word)
+            word = re.sub(r'([?!/,.]+)',r',',word)
             words = word.split(',')
+            if (word == '$'):
+                print("hello")
             for word in words:
                 if (len(word) > 0) and (word.isspace() == False) and word.lower() not in self.stop_words:
                     if (word[0] == '#'):
-                        self.parse_hashtags(word[1:])
-                        self.text_tokens.append(word.lower().replace('_', ''))
+                        hashtag_word = word[1:]
+                        if hashtag_word != '':
+                            self.parse_hashtags(hashtag_word)
+                    elif word[0] == '@':
+                        tag_word = word[1:]
+                        if tag_word != '':
+                            self.parse_tags(tag_word)
                     elif word[0] == '"' or word[0] == "'" or word[0] == '‘' or word[0] == '’':
                         iterations = self.parse_quote(word, i, text_splitted)
                         i += iterations
@@ -73,6 +91,13 @@ class Parse:
             i += 1
 
         ##print(self.text_tokens)
+
+    def parse_tags(self, word):
+        word = re.sub('[^A-z$_0-9]', '', word)
+        temp = re.sub('[^A-Za-z$0-9]', '', word)
+        if temp != '':
+            t_word = '@' + str(word)
+            self.text_tokens.append(t_word)
 
     def parse_quote(self, word, i, text_splitted):
 
@@ -103,8 +128,13 @@ class Parse:
 
     def parse_hashtags(self, element):
 
+        element = re.sub('[^A-z$_0-9]', '', element)
+        if (element == ''):
+            return
         if element == element.upper():
-            self.text_tokens.append(element.replace('_', ''))
+            temp = re.sub('[^A-Za-z$0-9]', '', element)
+            if temp != '':
+                self.text_tokens.append(element.replace('_', ''))
         elif element != element.lower():
             name = ''
             for c in element:
@@ -131,6 +161,9 @@ class Parse:
                 else:
                     name = name.lower().replace('_', '')
                     self.text_tokens.append(name)
+
+            element = '#'+element
+            self.text_tokens.append(element.lower().replace('_', ''))
 
     def parse_url(self, term_dict, url):
         stop_words = stopwords.words('english')
@@ -235,10 +268,16 @@ class Parse:
                 term_dict[term] += 1
 
         # Parse.corpus_dict.update(term_dict)
-
         ##print(term_dict)
 
+        max_tf = 0
+        # Parse.corpus_dict.update(term_dict)
+        for item in term_dict.values():
+            if max_tf < item:
+                max_tf = item
+
+        # print(term_dict)
         document = Document(tweet_id, tweet_date, full_text, url, retweet_text, retweet_url, quote_text,
-                            quote_url, term_dict, doc_length)
+                            quote_url, term_dict, doc_length, max_tf, len(term_dict))
 
         return document
