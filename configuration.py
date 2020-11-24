@@ -11,5 +11,5 @@ class ConfigClass:
     def get__corpusPath(self):
         return self.corpusPath
 
-    def get__corsavePath(self):
+    def get_savedFileMainFolder(self):
         return self.savedFileMainFolder

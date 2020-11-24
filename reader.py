@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 import pandas as pd
 
@@ -28,8 +29,11 @@ class ReadFile:
         for i in range(len(directories)):
             if not directories[i].endswith('DS_Store'):
                 for name in os.listdir(self.corpus_path + '\\' + directories[i]):
+                    # print(datetime.now())
                     if name.endswith('parquet'):
                         full_name = directories[i] + '\\' + name
                         documents_list.extend(self.read_file(full_name))
+                        print(str(name))
 
+        print("finish read")
         return documents_list
