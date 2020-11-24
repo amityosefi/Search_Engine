@@ -41,7 +41,7 @@ class Searcher:
                 print('term {} not found in posting'.format(term))
 
         f = open(self.path + '\\searcher.pkl', "wb")
-        pickle.dump(self.relevant_docs, f)
+        pickle.dump(relevant_docs, f)
         f.close()
         return relevant_docs
 
