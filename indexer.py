@@ -1,5 +1,6 @@
 from parser_module import Parse
 import pickle
+import os
 
 
 class Indexer:
@@ -11,7 +12,6 @@ class Indexer:
         self.postingDict = {}
         self.config = corpus_path
         self.postingcounter = {}
-        self.counter_tweetid = {}  # key=counter , value = tweetid
         self.documents = []
 
     def add_new_doc(self, document):
@@ -29,38 +29,26 @@ class Indexer:
             try:
                 # if term == '' or str(term).isspace():
                 #     continue
-                posting_name = term[0]
-                i = 0
-                flag = False
-                while not ('a' <= posting_name <= 'z' or 'A' <= posting_name <= 'Z' or '0' <= posting_name <= '9' or posting_name == '$'):
-                    """
-                    if i == len(term) - 1:
-                        if not ('a' <= posting_name <= 'z' or 'A' <= posting_name <= 'Z' or '0' <= posting_name <= '9' or posting_name == '$'):
-                            flag = True
-                            break
-                    """
+                posting_name = self.find_posting_name(term)
 
-                    i += 1
-                    posting_name = str(term[i])
-
-                if flag:
+                if posting_name == '-1':
                     continue
 
-                if posting_name not in self.terms_idx.keys():
+                if posting_name not in self.terms_idx:
                     self.terms_idx[posting_name] = []
 
                 self.terms_idx[posting_name].append(term)
 
-                if term not in self.postingDict.keys():
+                if term not in self.postingDict:
                     self.postingDict[term] = []
 
-                self.counter_tweetid[self.counter] = document.tweet_id
-
-                self.postingDict[term].append([self.counter, document_dictionary[term],
+                if document.doc_length > 0:
+                    self.postingDict[term].append([document.tweet_id, document_dictionary[term],
                                                "%.3f" % float(document_dictionary[term] / document.doc_length)])
-                self.counter += 1
+                else:
+                    self.postingDict[term].append([document.tweet_id, document_dictionary[term], 0.9])
 
-                if posting_name not in self.postingcounter.keys():
+                if posting_name not in self.postingcounter:
                     self.postingcounter[posting_name] = 0
 
                 if len(self.terms_idx[posting_name]) == 25000:
@@ -68,11 +56,33 @@ class Indexer:
                     term_lst = list(dict.fromkeys(sorted_term_lst))  # remove duplicates
                     self.terms_idx[posting_name] = []
                     self.uploadPostingFile(term_lst, posting_name)
-                    # self.printPostingFile(posting_name)
+                    self.printPostingFile(posting_name)
                     # self.printPostingFile('documents')
 
             except:
                 print('problem with the following key {}'.format(term[0]))
+
+    def find_posting_name(self, term):
+
+        posting_name = term[0]
+        i = 0
+        flag = False
+        while not (
+                'a' <= posting_name <= 'z' or 'A' <= posting_name <= 'Z' or '0' <= posting_name <= '9' or posting_name == '$'):
+            """
+            if i == len(term) - 1:
+                if not ('a' <= posting_name <= 'z' or 'A' <= posting_name <= 'Z' or '0' <= posting_name <= '9' or posting_name == '$'):
+                    flag = True
+                    break
+            """
+
+            i += 1
+            posting_name = str(term[i])
+
+        if flag:
+            return '-1'
+
+        return posting_name
 
     def uploadPostingFile(self, term_lst, c):
         """
@@ -82,28 +92,79 @@ class Indexer:
         """
         posting_name = c + str(self.postingcounter[c])
         i = 0
+        dic = {}
         for term in term_lst:
-            with open(self.config + '\\' + posting_name + '.pkl', 'ab') as f:
-                pickle.dump(self.postingDict[term], f)
-                self.postingDict.pop(term)
+            dic[term] = self.postingDict[term]
+            self.postingDict.pop(term)
             i += 1
-            if term not in self.inverted_idx:
-                self.inverted_idx[term] = [[posting_name, i]]
-            else:
-                self.inverted_idx[term].append([posting_name, i])
+            # if term not in self.inverted_idx:
+            #     self.inverted_idx[term] = [[posting_name, i]]
+            # else:
+            #     self.inverted_idx[term].append([posting_name, i])
+
+        f = open(self.config + '\\' + posting_name + '.pkl', 'wb')
+        pickle.dump(dic, f)
+        f.close()
+
         self.postingcounter[c] += 1
 
     # def printPostingFile(self, term):
     def printPostingFile(self, c, index=0):
         posting_name = c + str(self.postingcounter[c] - 1)
-        objects = []
+        objects = {}
 
         with (open(self.config + '\\' + posting_name + '.pkl', "rb")) as openfile:
             while True:
                 try:
-                    objects.append(pickle.load(openfile))
+                    objects = pickle.load(openfile)
                 except EOFError:
                     break
 
-            # print(objects[index])#print specific term
-            print(objects)
+            #print(objects[index])#print specific term
+            #print(objects)
+
+    def merge_posting_files(self):
+
+        for key in self.terms_idx:
+            if (self.terms_idx[key] == []):
+                continue
+            sorted_term_lst = sorted(self.terms_idx[key])
+            term_lst = list(dict.fromkeys(sorted_term_lst))
+            dic = {}
+            for term in term_lst:
+                dic[term] = self.postingDict[term]
+                self.postingDict.pop(term)
+            posting_name = key + str(self.postingcounter[key])
+            f = open(self.config + '\\' + posting_name + '.pkl', 'ab')
+            pickle.dump(dic, f)
+            f.close()
+
+        for posting_name in self.postingcounter:
+            merged_dict = {}
+            objects = []
+            posting_lst = self.find_posting_files(posting_name)
+            for file in posting_lst:
+                with (open(file, "rb")) as openfile:
+                    while True:
+                        try:
+                            objects = pickle.load(openfile)
+                        except EOFError:
+                            break
+                os.remove(file)
+                for term in objects:
+                    if term not in merged_dict:
+                        merged_dict[term] = []
+                    merged_dict[term].extend(objects[term])
+
+            merged_file = open(self.config + '\\' + posting_name + '.pkl', "wb")
+            pickle.dump(objects, merged_file)
+            merged_file.close()
+
+    def find_posting_files(self, posting_name):
+        posting_lst = []
+        num_of_posting = self.postingcounter[posting_name]
+        for i in range(num_of_posting):
+            file_path = self.config + '\\' + posting_name + str(i) + '.pkl'
+            posting_lst.append(file_path)
+
+        return posting_lst

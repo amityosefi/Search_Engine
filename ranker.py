@@ -13,15 +13,15 @@ class Ranker:
         :param relevant_doc: dictionary of documents that contains at least one term from the query.
         :return: sorted list of documents by score
         """
-        lda_model = gensim.models.ldamodel.LdaModel(corpus=corpus,
-                                                    id2word=id2word,
-                                                    num_topics=20,
-                                                    random_state=100,
-                                                    update_every=1,
-                                                    chunksize=100,
-                                                    passes=10,
-                                                    alpha='auto',
-                                                    per_word_topics=True)
+        # lda_model = gensim.models.ldamodel.LdaModel(corpus=corpus,
+        #                                             id2word=id2word,
+        #                                             num_topics=20,
+        #                                             random_state=100,
+        #                                             update_every=1,
+        #                                             chunksize=100,
+        #                                             passes=10,
+        #                                             alpha='auto',
+        #                                             per_word_topics=True)
 
 
 

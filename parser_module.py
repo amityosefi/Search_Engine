@@ -1,16 +1,22 @@
 from nltk.corpus import stopwords
 from document import Document
-from nltk.stem import LancasterStemmer
 import re
+
+from stemmer import Stemmer
 
 
 class Parse:
     corpus_dict = {}
 
-    def __init__(self):
+    def __init__(self, toStem):
         self.stop_words = stopwords.words('english')
         self.stop_words.extend(["RT", "rt", "rT", "Rt"])
-        ##self.lancaster =LancasterStemmer()
+        self.stop_words_dict = {self.stop_words[i]: 0 for i in range(0, len(self.stop_words), 1)}
+        self.term_dict = {}
+        self.text_tokens = []
+        self.toStem = toStem
+        if self.toStem:
+            self.stemmer = Stemmer()
 
     def parse_sentence(self, text):
 
@@ -63,14 +69,14 @@ class Parse:
                 ## token is not a number
                 word = re.sub('[^A-z%_@#.,!?$/0-9]', '', text_splitted[i])
 
-            if word.startswith('https'):
+            if word.startswith('https') or word.startswith('http') or word.startswith('www') or word.startswith('t.co'):
                 i += 1
                 continue
 
             word = re.sub(r'([?!/,.]+)',r',',word)
             words = word.split(',')
             for word in words:
-                if (len(word) > 0) and (word.isspace() == False) and word.lower() not in self.stop_words:
+                if (len(word) > 0) and (word.isspace() == False) and word.lower() not in self.stop_words_dict:
                     if (word[0] == '#'):
                         word = word[1:]
                         hashtags = word.split('#')
@@ -94,8 +100,12 @@ class Parse:
                         ##word = lancaster.stem(word)
                         word = re.sub('[^A-Za-z0-9]', '', word)
                         if word != '':
-                            self.text_tokens.append(word)
+                            if self.toStem:
+                                self.text_tokens.append(self.stemmer.stem_term(word))
+                            else:
+                                self.text_tokens.append(word)
             i += 1
+        return self.text_tokens
 
         ##print(self.text_tokens)
 
@@ -140,14 +150,16 @@ class Parse:
         hashtag_tokens = expanded.split(' ')
         for w in hashtag_tokens:
             if w != '' and '_' not in w:
-                self.text_tokens.append(w)
+                if self.toStem:
+                    self.text_tokens.append(self.stemmer.stem_term(w))
+                else:
+                    self.text_tokens.append(w)
         word = re.sub('[^A-z$_0-9]', '', element)
         temp = re.sub('[^A-Za-z%$0-9]', '', word)
         if temp != '':
             self.text_tokens.append('#'+element)
 
-    def parse_url(self, term_dict, url):
-        stop_words = stopwords.words('english')
+    def parse_url(self, url):
         name = ''
         for character in url:
             if character == ' ':
@@ -159,25 +171,23 @@ class Parse:
                     (len(name) == 1) and ('a' <= name <= 'z') or ('A' <= name <= 'Z') or ('0' <= name <= '9')):
                 ##if name.isdigit():
                   ##  name = self.parse_numbers(name)
-                if name.lower() not in stop_words:
-                    if name not in term_dict.keys():
+                if name.lower() not in self.stop_words_dict and name.startswith('https') and not name.startswith('http') and not name.startswith('www') and not name.startswith('t.co'):
+                    if name not in self.term_dict.keys():
                         name = str(name).lower()
-                        term_dict[name] = 1
+                        self.term_dict[name] = 1
                     else:
-                        term_dict[name] += 1
+                        self.term_dict[name] += 1
                 name = ''
         if (len(name) > 1) or (
                 (len(name) == 1) and ('a' <= name <= 'z') or ('A' <= name <= 'Z') or ('0' <= name <= '9')):
             ##if name.isdigit():
               ##  name = self.parse_numbers(name)
-            if name.lower() not in stop_words:
-                if name not in term_dict.keys():
+            if name.lower() not in self.stop_words_dict:
+                if name not in self.term_dict.keys():
                     name = str(name).lower()
-                    term_dict[name] = 1
+                    self.term_dict[name] = 1
                 else:
-                    term_dict[name] += 1
-
-        return term_dict
+                    self.term_dict[name] += 1
 
     def parse_numbers(self, item, next_i=''):
         r = ['', 'K', 'M', 'B']
@@ -220,49 +230,47 @@ class Parse:
         retweet_url = doc_as_list[5]
         quote_text = doc_as_list[6]
         quote_url = doc_as_list[7]
-        term_dict = {}
         self.text_tokens = []
+        self.term_dict = {}
         ##print(full_text)
         self.parse_sentence(full_text)
 
         if (url is not None) and (url != '{}'):
-            updated_dict = self.parse_url(term_dict, url)
-            term_dict = updated_dict
+            self.parse_url(url)
 
         if (quote_text is not None) and (quote_text != '{}'):
-            updated_dict = self.parse_url(term_dict, quote_text)
-            term_dict = updated_dict
+            self.parse_url(quote_text)
 
         str_retweet_url = str(retweet_url)
         url_retweet_url_index = str_retweet_url.find('https')
         if url_retweet_url_index != -1:
             url_retweet_url = str_retweet_url[url_retweet_url_index:]
             if (url_retweet_url is not None) and (url_retweet_url != '{}'):
-                updated_dict = self.parse_url(term_dict, url_retweet_url)
-                term_dict = updated_dict
+                self.parse_url(url_retweet_url)
 
         doc_length = len(self.text_tokens)  # after text operations.4
 
+
         for term in self.text_tokens:
-            if term not in term_dict.keys():
+            if term not in self.term_dict:
                 term = str(term).lower()
-                term_dict[term] = 1
+                self.term_dict[term] = 1
             else:
-                term_dict[term] += 1
+                self.term_dict[term] += 1
 
         # Parse.corpus_dict.update(term_dict)
         #print(term_dict)
 
         max_tf = 0
         # Parse.corpus_dict.update(term_dict)
-        for item in term_dict.values():
+        for item in self.term_dict.values():
             if max_tf < item:
                 max_tf = item
 
-        # print(full_text)
+        #print(full_text)
         # print(self.text_tokens)
-        # print(term_dict)
+        #print(self.term_dict)
         document = Document(tweet_id, tweet_date, full_text, url, retweet_text, retweet_url, quote_text,
-                            quote_url, term_dict, doc_length, max_tf, len(term_dict))
+                            quote_url, self.term_dict, doc_length, max_tf, len(self.term_dict), self.text_tokens)
 
         return document
