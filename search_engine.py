@@ -30,7 +30,7 @@ def run_engine():
     for idx, document in enumerate(documents_list):
         # parse the document
         print(number_of_documents)
-        parsed_document = p.parse_doc(documents_list[1709])
+        parsed_document = p.parse_doc(document)
         number_of_documents += 1
    ## end_parsing = time.time() - start_parsing
     ##print(end_parsing)
@@ -38,10 +38,13 @@ def run_engine():
 
         # index the document data
         indexer.add_new_doc(parsed_document)
+    end_parsing = time.time() - start_parsing
     print('Finished parsing and indexing. Starting to export files')
 
     utils.save_obj(indexer.inverted_idx, "inverted_idx")
     utils.save_obj(indexer.postingDict, "posting")
+
+    print('finishing parsing and indexing takes' + str(end_parsing))
 
 """
 def load_index():

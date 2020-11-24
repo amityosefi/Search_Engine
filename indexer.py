@@ -45,8 +45,8 @@ class Indexer:
 
                 if flag:
                     continue
-                posting_name = term[0]
-                if posting_name not in self.terms_idx.keys():
+
+                if posting_name not in self.terms_idx:
                     self.terms_idx[posting_name] = []
 
                 self.terms_idx[posting_name].append(term)
@@ -56,11 +56,16 @@ class Indexer:
 
                 self.counter_tweetid[self.counter] = document.tweet_id
 
-                self.postingDict[term].append([self.counter, document_dictionary[term],
+
+                if document.doc_length > 0:
+                    self.postingDict[term].append([self.counter, document_dictionary[term],
                                                "%.3f" % float(document_dictionary[term] / document.doc_length)])
+                else:
+                    self.postingDict[term].append([self.counter, document_dictionary[term], 0.9])
+
                 self.counter += 1
 
-                if posting_name not in self.postingcounter.keys():
+                if posting_name not in self.postingcounter:
                     self.postingcounter[posting_name] = 0
 
                 if len(self.terms_idx[posting_name]) == 25000:
@@ -68,7 +73,7 @@ class Indexer:
                     term_lst = list(dict.fromkeys(sorted_term_lst))  # remove duplicates
                     self.terms_idx[posting_name] = []
                     self.uploadPostingFile(term_lst, posting_name)
-                    # self.printPostingFile(posting_name)
+                    self.printPostingFile(posting_name)
                     # self.printPostingFile('documents')
 
             except:
@@ -82,16 +87,34 @@ class Indexer:
         """
         posting_name = c + str(self.postingcounter[c])
         i = 0
+        dic = {}
         for term in term_lst:
-            with open(self.config + '\\' + posting_name + '.pkl', 'ab') as f:
-                pickle.dump(self.postingDict[term], f)
-                self.postingDict.pop(term)
+            dic[term] = self.postingDict[term]
+            self.postingDict.pop(term)
             i += 1
-            if term not in self.inverted_idx:
-                self.inverted_idx[term] = [[posting_name, i]]
-            else:
-                self.inverted_idx[term].append([posting_name, i])
+            # if term not in self.inverted_idx:
+            #     self.inverted_idx[term] = [[posting_name, i]]
+            # else:
+            #     self.inverted_idx[term].append([posting_name, i])
+
+        f = open(self.config + '\\' + posting_name + '.pkl', 'wb')
+        pickle.dump(dic, f)
+        f.close()
+
         self.postingcounter[c] += 1
+
+        # posting_name = c + str(self.postingcounter[c])
+        # i = 0
+        # for term in term_lst:
+        #     with open(self.config + '\\' + posting_name + '.pkl', 'ab') as f:
+        #         pickle.dump(self.postingDict[term], f)
+        #         self.postingDict.pop(term)
+        #     i += 1
+        #     if term not in self.inverted_idx:
+        #         self.inverted_idx[term] = [[posting_name, i]]
+        #     else:
+        #         self.inverted_idx[term].append([posting_name, i])
+        # self.postingcounter[c] += 1
 
     # def printPostingFile(self, term):
     def printPostingFile(self, c, index=0):
@@ -106,4 +129,4 @@ class Indexer:
                     break
 
             # print(objects[index])#print specific term
-            print(objects)
+            #print(objects)
