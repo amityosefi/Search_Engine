@@ -23,7 +23,7 @@ def run_engine(corpus_path, output_path, stemming=False):
     start_reader = time.time()
     documents_list = r.read_dir()
     end_reader = time.time() - start_reader
-    print("Reader takes" + str(end_reader) + "seconds")
+    print("Reader takes" + ' ' + str(end_reader))
 
     start_parsing = time.time()
     # Iterate over every document in the file
@@ -38,7 +38,6 @@ def run_engine(corpus_path, output_path, stemming=False):
 
         # index the document data
         indexer.add_new_doc(parsed_document)
-    end_parsing = time.time() - start_parsing
     print('Finished parsing and indexing. Starting to export files')
 
     indexer.merge_posting_files()
@@ -46,7 +45,8 @@ def run_engine(corpus_path, output_path, stemming=False):
     utils.save_obj(indexer.inverted_idx, "inverted_idx")
     utils.save_obj(indexer.postingDict, "posting")
 
-    print('finishing parsing and indexing takes' + str(end_parsing))
+    end_parsingindexing = time.time() - start_parsing
+    print('finishing parsing and indexing takes' + ' ' + str(end_parsingindexing))
 
 """
 def load_index():
