@@ -1,5 +1,6 @@
 from parser_module import Parse
 import pickle
+import os
 
 
 class Indexer:
@@ -128,5 +129,45 @@ class Indexer:
                 except EOFError:
                     break
 
-            # print(objects[index])#print specific term
+            #print(objects[index])#print specific term
             #print(objects)
+
+
+    def merge_posting_files(self):
+
+        try:
+            for posting_name in self.postingcounter:
+                merged_dict = {}
+                objects = []
+                posting_lst = self.find_posting_files(posting_name)
+                for file in posting_lst:
+                    with (open(file, "rb")) as openfile:
+                        while True:
+                            try:
+                                objects.append(pickle.load(openfile))
+                            except EOFError:
+                                break
+                    os.remove(file)
+                for object in objects:
+                    for term in object:
+                        if term not in merged_dict:
+                            merged_dict[term] = []
+                        merged_dict[term].extend(object[term])
+
+                merged_file = open(self.config + '\\' + posting_name + '.pkl', "wb")
+                pickle.dump(objects, merged_file)
+                merged_file.close()
+        except:
+            print("not working")
+
+    def find_posting_files(self, posting_name):
+        posting_lst = []
+        num_of_posting = self.postingcounter[posting_name]
+        for i in range(num_of_posting):
+            file_path = self.config + '\\' + posting_name + str(i) + '.pkl'
+            posting_lst.append(file_path)
+
+        return posting_lst
+
+
+

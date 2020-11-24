@@ -2,16 +2,20 @@ from nltk.corpus import stopwords
 from document import Document
 from nltk.stem import LancasterStemmer
 import re
+from stemmer import Stemmer
 
 
 class Parse:
     corpus_dict = {}
 
-    def __init__(self):
+    def __init__(self, stem):
         self.stop_words = stopwords.words('english')
         self.stop_words.extend(["RT", "rt", "rT", "Rt"])
         self.stop_words_dict = {self.stop_words[i]: 0 for i in range(0, len(self.stop_words), 1)}
         self.term_dict = {}
+        self.toStem = stem
+        if self.toStem:
+            self.stemmer = Stemmer()
         ##self.lancaster =LancasterStemmer()
 
     def parse_sentence(self, text):
@@ -259,6 +263,6 @@ class Parse:
         # print(self.text_tokens)
         #print(self.term_dict)
         document = Document(tweet_id, tweet_date, full_text, url, retweet_text, retweet_url, quote_text,
-                            quote_url, self.term_dict, doc_length, max_tf, len(self.term_dict))
+                            quote_url, self.term_dict, doc_length, max_tf, len(self.term_dict), self.text_tokens)
 
         return document

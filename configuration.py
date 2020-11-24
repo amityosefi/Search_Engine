@@ -1,10 +1,10 @@
 class ConfigClass:
-    def __init__(self):
-        self.corpusPath = 'C:\\Users\\user\\Documents\\temp\\Data'
-        self.savedFileMainFolder = 'C:\\Users\\user\\Documents\\temp\\posting'
+    def __init__(self, corpus_path, savedFileMainFolder, toStem):
+        self.corpusPath = corpus_path
+        self.savedFileMainFolder = savedFileMainFolder
         self.saveFilesWithStem = self.savedFileMainFolder + "/WithStem"
         self.saveFilesWithoutStem = self.savedFileMainFolder + "/WithoutStem"
-        self.toStem = False
+        self.toStem = toStem
 
         print('Project was created successfully..')
 
@@ -13,3 +13,6 @@ class ConfigClass:
 
     def get_savedFileMainFolder(self):
         return self.savedFileMainFolder
+
+    def get_toStem(self):
+        return self.toStem

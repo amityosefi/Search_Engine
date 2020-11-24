@@ -8,16 +8,16 @@ import utils
 import os
 
 
-def run_engine():
+def run_engine(corpus_path, output_path, stemming=False):
     """
     :return:
     """
 
     number_of_documents = 0
 
-    config = ConfigClass()
+    config = ConfigClass(corpus_path, output_path, stemming)
     r = ReadFile(corpus_path=config.get__corpusPath())
-    p = Parse()
+    p = Parse(stemming)
     indexer = Indexer(corpus_path=config.get_savedFileMainFolder())
 
     start_reader = time.time()
@@ -41,6 +41,8 @@ def run_engine():
     end_parsing = time.time() - start_parsing
     print('Finished parsing and indexing. Starting to export files')
 
+    indexer.merge_posting_files()
+
     utils.save_obj(indexer.inverted_idx, "inverted_idx")
     utils.save_obj(indexer.postingDict, "posting")
 
@@ -63,8 +65,8 @@ def search_and_rank_query(query, inverted_index, k):
 """
 
 
-def main():
-    run_engine()
+def main(corpus_path, output_path, stemming, queries, num_docs_to_retrieve = 2000):
+    run_engine(corpus_path, output_path, stemming)
 
 
     query = input("Please enter a query: ")
@@ -72,3 +74,6 @@ def main():
     ##inverted_index = load_index()
     ##for doc_tuple in search_and_rank_query(query, inverted_index, k):
     ##  print('tweet id: {}, score (unique common words with query): {}'.format(doc_tuple[0], doc_tuple[1]))
+    # inverted_index = load_index()
+    # for doc_tuple in search_and_rank_query(queries, inverted_index, num_docs_to_retrieve):
+    #     print('tweet id: {}, score (unique common words with query): {}'.format(doc_tuple[0], doc_tuple[1]))
