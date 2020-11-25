@@ -56,25 +56,26 @@ def load_index(output_path):
     return inverted_index
 
 
-def search_and_rank_query(queries, inverted_index, num_docs_to_retrieve, stemming,output_path):
+def search_and_rank_query(queries, num_docs_to_retrieve, stemming,output_path):
 
     pa = Parse(stemming)
     if isinstance(queries, list):
         for query in queries:
-            check_query(query, inverted_index, num_docs_to_retrieve, pa,output_path)
+            return check_query(query, num_docs_to_retrieve, pa,output_path)
     else:
         try:
             f = open(queries, "r")
             for query in f:
                 print(query)
-                check_query(query, inverted_index, num_docs_to_retrieve,pa,output_path)
+                return check_query(query, num_docs_to_retrieve,pa,output_path)
             f.close()
         except:
             print("not working")
 
-def check_query(query,inverted_index, num_docs_to_retrieve, p,output_path):
+def check_query(query, num_docs_to_retrieve, p,output_path):
+
     query_as_list = p.parse_sentence(query)
-    searcher = Searcher(inverted_index, p, output_path)
+    searcher = Searcher(p, output_path)
     relevant_docs = searcher.relevant_docs_from_posting(query_as_list)
     ranked_docs = searcher.ranker.rank_relevant_doc(relevant_docs)
     return searcher.ranker.retrieve_top_k(ranked_docs, num_docs_to_retrieve)
@@ -82,14 +83,13 @@ def check_query(query,inverted_index, num_docs_to_retrieve, p,output_path):
 
 def main(corpus_path, output_path, stemming, queries, num_docs_to_retrieve=2000):
     # f = open(queries, "r")
-    # while True:
-    #     if not f.readline():
-    #         break
-    #     print(f.readline())
-
+    # for query in f:
+    #     print(query)
+    # f.close()
     run_engine(corpus_path, output_path, stemming)
 
-    inverted_index = load_index(output_path)
+    # inverted_index = load_index(output_path)
 
-    for doc_tuple in search_and_rank_query(queries, inverted_index, num_docs_to_retrieve, stemming,output_path):
-        print('tweet id: {}, score (unique common words with query): {}'.format(doc_tuple[0], doc_tuple[1]))
+
+    for tweetId in search_and_rank_query(queries, num_docs_to_retrieve, stemming,output_path):
+        print('tweet id: ' + str(tweetId[0]))

@@ -7,13 +7,12 @@ import utils
 
 class Searcher:
 
-    def __init__(self, inverted_index, parser, path):
+    def __init__(self, parser, path):
         """
         :param inverted_index: dictionary of inverted index
         """
         self.parser = parser
         self.ranker = Ranker()
-        self.inverted_index = inverted_index
         self.path = path
 
     def relevant_docs_from_posting(self, query):
@@ -27,7 +26,7 @@ class Searcher:
         for term in query:
             try: # an example of checks that you have to do
                 posting_name = term[0]
-                with (open(self.config + '\\' + posting_name + '.pkl', "rb")) as openfile:
+                with (open(self.path + '\\' + posting_name + '.pkl', "rb")) as openfile:
                     while True:
                         try:
                             objects = pickle.load(openfile)
@@ -35,7 +34,13 @@ class Searcher:
                             break
                 if term in objects:
                     for tweet in objects[term]:
-                        self.relevant_docs[tweet[0]] = (objects[tweet][2],objects[tweet][2])
+                        # print(objects[term])
+                        # print(tweet)
+                        # print(tweet[0])
+                        # print([tweet][1])
+                        # print([tweet][2])
+
+                        relevant_docs[tweet[0]] = [tweet[1], tweet[2]]
 
             except:
                 print('term {} not found in posting'.format(term))
@@ -43,6 +48,8 @@ class Searcher:
         f = open(self.path + '\\searcher.pkl', "wb")
         pickle.dump(relevant_docs, f)
         f.close()
+
+        print(relevant_docs)
         return relevant_docs
 
 

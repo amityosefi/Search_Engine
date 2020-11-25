@@ -1,3 +1,8 @@
+from pprint import pprint
+
+import gensim
+from gensim import corpora
+
 from parser_module import Parse
 import pickle
 import os
@@ -23,6 +28,29 @@ class Indexer:
         """
 
         document_dictionary = document.term_doc_dictionary
+
+        # self.documents.append(document)
+        # Go over each term in the doc
+        # texts = [document.text_tokens]
+        # id2word = corpora.Dictionary(texts)
+        # corpus = [id2word.doc2bow(text) for text in texts]
+        # # print([[(id2word[id], freq) for id, freq in cp] for cp in corpus[:1]])
+        # lda_model = gensim.models.ldamodel.LdaModel(corpus=corpus,
+        #                                             id2word=id2word,
+        #                                             num_topics=5,
+        #                                             random_state=100,
+        #                                             update_every=1,
+        #                                             chunksize=100,
+        #                                             passes=10,
+        #                                             alpha='auto',
+        #                                             per_word_topics=True)
+        #
+        # pprint(lda_model.print_topics(num_topics=5, num_words=3))
+
+
+
+
+
         #self.documents.append(document)
         # Go over each term in the doc
         for term in document_dictionary:
@@ -30,9 +58,6 @@ class Indexer:
                 # if term == '' or str(term).isspace():
                 #     continue
                 posting_name = self.find_posting_name(term)
-
-                if posting_name == '-1':
-                    continue
 
                 if posting_name not in self.terms_idx:
                     self.terms_idx[posting_name] = []
@@ -52,8 +77,8 @@ class Indexer:
                     self.postingcounter[posting_name] = 0
 
                 if len(self.terms_idx[posting_name]) == 25000:
-                    sorted_term_lst = sorted(self.terms_idx[posting_name])
-                    term_lst = list(dict.fromkeys(sorted_term_lst))  # remove duplicates
+                    #sorted_term_lst = sorted(self.terms_idx[posting_name])
+                    term_lst = list(dict.fromkeys(self.terms_idx[posting_name]))  # remove duplicates
                     self.terms_idx[posting_name] = []
                     self.uploadPostingFile(term_lst, posting_name)
                     self.printPostingFile(posting_name)
@@ -64,11 +89,10 @@ class Indexer:
 
     def find_posting_name(self, term):
 
-        posting_name = term[0]
+        posting_name = str(term[0]).lower()
         i = 0
-        flag = False
         while not (
-                'a' <= posting_name <= 'z' or 'A' <= posting_name <= 'Z' or '0' <= posting_name <= '9' or posting_name == '$'):
+                'a' <= posting_name <= 'z' or '0' <= posting_name <= '9' or posting_name == '$'):
             """
             if i == len(term) - 1:
                 if not ('a' <= posting_name <= 'z' or 'A' <= posting_name <= 'Z' or '0' <= posting_name <= '9' or posting_name == '$'):
@@ -77,10 +101,7 @@ class Indexer:
             """
 
             i += 1
-            posting_name = str(term[i])
-
-        if flag:
-            return '-1'
+            posting_name = str(term[i]).lower()
 
         return posting_name
 
@@ -91,16 +112,10 @@ class Indexer:
             self.documents.clear()
         """
         posting_name = c + str(self.postingcounter[c])
-        i = 0
         dic = {}
         for term in term_lst:
             dic[term] = self.postingDict[term]
             self.postingDict.pop(term)
-            i += 1
-            # if term not in self.inverted_idx:
-            #     self.inverted_idx[term] = [[posting_name, i]]
-            # else:
-            #     self.inverted_idx[term].append([posting_name, i])
 
         f = open(self.config + '\\' + posting_name + '.pkl', 'wb')
         pickle.dump(dic, f)
@@ -141,7 +156,7 @@ class Indexer:
 
         for posting_name in self.postingcounter:
             merged_dict = {}
-            objects = []
+            objects = {}
             posting_lst = self.find_posting_files(posting_name)
             for file in posting_lst:
                 with (open(file, "rb")) as openfile:
@@ -152,9 +167,13 @@ class Indexer:
                             break
                 os.remove(file)
                 for term in objects:
-                    if term not in merged_dict:
-                        merged_dict[term] = []
-                    merged_dict[term].extend(objects[term])
+                    lower_term = str(term).lower()
+                    temp = term
+                    if lower_term in Parse.corpus_dict:
+                        temp = lower_term
+                    if temp not in merged_dict:
+                        merged_dict[temp] = []
+                    merged_dict[temp].extend(objects[term])
 
             merged_file = open(self.config + '\\' + posting_name + '.pkl', "wb")
             pickle.dump(objects, merged_file)
@@ -162,7 +181,7 @@ class Indexer:
 
     def find_posting_files(self, posting_name):
         posting_lst = []
-        num_of_posting = self.postingcounter[posting_name]
+        num_of_posting = self.postingcounter[posting_name] + 1
         for i in range(num_of_posting):
             file_path = self.config + '\\' + posting_name + str(i) + '.pkl'
             posting_lst.append(file_path)
