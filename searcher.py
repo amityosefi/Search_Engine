@@ -7,13 +7,14 @@ import utils
 
 class Searcher:
 
-    def __init__(self, parser, path):
+    def __init__(self, parser, path, lda):
         """
         :param inverted_index: dictionary of inverted index
         """
         self.parser = parser
         self.ranker = Ranker()
         self.path = path
+        self.lda = lda
 
     def relevant_docs_from_posting(self, query):
         """
@@ -22,34 +23,30 @@ class Searcher:
         :return: dictionary of relevant documents.
         """
         # posting = utils.load_obj("posting.pkl")
-        relevant_docs = {}
-        for term in query:
-            try: # an example of checks that you have to do
-                posting_name = term[0]
-                with (open(self.path + '\\' + posting_name + '.pkl', "rb")) as openfile:
-                    while True:
-                        try:
-                            objects = pickle.load(openfile)
-                        except EOFError:
-                            break
-                if term in objects:
-                    for tweet in objects[term]:
-                        # print(objects[term])
-                        # print(tweet)
-                        # print(tweet[0])
-                        # print([tweet][1])
-                        # print([tweet][2])
+        print("start searcher")
 
-                        relevant_docs[tweet[0]] = [tweet[1], tweet[2]]
 
-            except:
-                print('term {} not found in posting'.format(term))
+        try: # an example of checks that you have to do
+            with (open(self.path + '\\searcher.pkl', "rb")) as openfile:
+                while True:
+                    try:
+                        objects = pickle.load(openfile)
+                    except EOFError:
+                        break
+        except:
+            print('term not found in posting')
 
-        f = open(self.path + '\\searcher.pkl', "wb")
-        pickle.dump(relevant_docs, f)
-        f.close()
 
-        print(relevant_docs)
+        relevant_docs = []
+
+        tokens = self.parser.parse_sentence(query)
+        self.lda.dictionary.add_documents([tokens])
+        self.lda.bow_corpus.append(self.lda.dictionary.doc2bow(tokens, allow_update=True))
+        topic_vector = self.lda.lda_model[self.bow_corpus[self.lda.counter]]
+        for topicID, prob in topic_vector:
+            if prob > 0.7:
+                relevant_docs.append(objects[topicID])
+        print(len(relevant_docs))
         return relevant_docs
 
 
