@@ -26,10 +26,15 @@ class ReadFile:
         documents_list = []
         directories = os.listdir(self.corpus_path)
         for i in range(len(directories)):
-            if not directories[i].endswith('DS_Store'):
-                for name in os.listdir(self.corpus_path + '\\' + directories[i]):
-                    if name.endswith('parquet'):
-                        full_name = directories[i] + '\\' + name
-                        documents_list.extend(self.read_file(full_name))
+            if directories[i].endswith('parquet'):
+                filename = directories[i]
+                full_name = self.corpus_path + '\\' + filename
+                documents_list.extend(self.read_file(full_name))
+            else: # it is a dir
+                if not directories[i].endswith('DS_Store'):
+                    for filename in os.listdir(self.corpus_path + '\\' + directories[i]):
+                        if filename.endswith('parquet'):
+                            full_name = directories[i] + '\\' + filename
+                            documents_list.extend(self.read_file(full_name))
 
         return documents_list
