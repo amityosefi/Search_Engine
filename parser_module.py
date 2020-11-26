@@ -264,6 +264,8 @@ class Parse:
             if (url_retweet_url is not None) and (url_retweet_url != '{}'):
                 self.parse_url(url_retweet_url)
 
+        # if tweet_id == '1288840500217131010' or tweet_id == '1288840857202962433' or tweet_id =='1288843001649860613' or tweet_id =='1288846201736105988' or tweet_id =='1288846573875724295':
+        #     print(full_text)
         # print(term_dict)
         # print(full_text)
         # print(self.term_dict)

@@ -3,6 +3,7 @@ import pickle
 from parser_module import Parse
 from ranker import Ranker
 import utils
+import gensim.corpora.dictionary
 
 
 class Searcher:
@@ -25,8 +26,7 @@ class Searcher:
         # posting = utils.load_obj("posting.pkl")
         print("start searcher")
 
-
-        try: # an example of checks that you have to do
+        try:  # an example of checks that you have to do
             with (open(self.path + '\\searcher.pkl', "rb")) as openfile:
                 while True:
                     try:
@@ -36,19 +36,24 @@ class Searcher:
         except:
             print('term not found in posting')
 
+        relevant_docs = {}
 
-        relevant_docs = []
-
-        tokens = self.parser.parse_sentence(query)
-        self.lda.dictionary.add_documents([tokens])
-        self.lda.bow_corpus.append(self.lda.dictionary.doc2bow(tokens, allow_update=True))
-        topic_vector = self.lda.lda_model[self.bow_corpus[self.lda.counter]]
+        query = self.parser.parse_sentence(query)
+        new_bow = self.lda.dictionary.doc2bow(query)
+        topic_vector = self.lda.lda_model.get_document_topics(bow=new_bow)
+        mx = 0
+        if len(topic_vector) > 1:
+            for topic in topic_vector:
+                if topic[1] > mx:
+                    mx = topic[1]
+        # print(topic_vector)
+        # topic_vector = self.lda.lda_model[self.bow_corpus[self.lda.counter]]
         for topicID, prob in topic_vector:
-            if prob > 0.7:
-                relevant_docs.append(objects[topicID])
+            if prob > 0.6 or prob >= mx:
+                for doc in objects[topicID]:
+                    relevant_docs[doc[0]] = ''
         print(len(relevant_docs))
         return relevant_docs
-
 
         # posting = utils.load_obj("posting")
         # relevant_docs = {}

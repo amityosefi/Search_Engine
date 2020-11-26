@@ -13,23 +13,7 @@ class Ranker:
         :param relevant_doc: dictionary of documents that contains at least one term from the query.
         :return: sorted list of documents by score
         """
-        # if self.counter < 10:
-        #     self.texts.append(document.text_tokens)
-        # elif self.counter == 10:
-        #     id2word = corpora.Dictionary(self.texts)
-        #     corpus = [id2word.doc2bow(text) for text in self.texts]
-        #     # print([[(id2word[id], freq) for id, freq in cp] for cp in corpus[:1]])
-        #     lda_model = gensim.models.ldamodel.LdaModel(corpus=corpus,
-        #                                                 id2word=id2word,
-        #                                                 num_topics=5,
-        #                                                 random_state=100,
-        #                                                 update_every=1,
-        #                                                 chunksize=1,
-        #                                                 passes=5,
-        #                                                 alpha='auto',
-        #                                                 per_word_topics=True)
 
-            # pprint(lda_model.print_topics(num_words=5))
 
 
 

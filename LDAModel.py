@@ -39,14 +39,11 @@ class LDA:
         #     for index, score in sorted(self.lda_model[self.bow_corpus[i]], key=lambda tup: -1 * tup[1]):
         #         print("\nScore: {}\t \nTopic: {}".format(score, self.lda_model.print_topic(index, 10)))
         #     print(i)
-        #     i += 1
+        #     i += 1\
 
         topic_dict = {}
-        j=0
         for docID in range(self.counter):
             topic_vector = self.lda_model[self.bow_corpus[docID]]
-            print(j)
-            j+=1
             for topicID, prob in topic_vector:
                 if prob > 0.9:
                     if topicID in topic_dict:

@@ -51,7 +51,8 @@ def run_engine(corpus_path, output_path, stemming=False):
     # utils.save_obj(indexer.inverted_idx, output_path + "\\inverted_idx")
     # utils.save_obj(indexer.postingDict, output_path + "\\posting")
 
-    return indexer.lda.initialModel(output_path)
+    indexer.lda.initialModel(output_path)
+    return indexer.lda
 
 
 # def load_index(output_path):
@@ -75,7 +76,7 @@ def main(corpus_path, output_path, stemming, queries, num_docs_to_retrieve=2000)
     lda = run_engine(corpus_path, output_path, stemming)
     print("start query")
     # inverted_index = load_index(output_path)
-
+    # lda = 5
     pa = Parse(stemming)
     if isinstance(queries, list):
         for query in queries:
@@ -86,14 +87,14 @@ def main(corpus_path, output_path, stemming, queries, num_docs_to_retrieve=2000)
                 i += 1
     else:
         try:
-            f = open(queries, "r")
-            for query in f:
+            file = open(queries, encoding="utf8")
+            for line in file:
                 i = 0
-                print("the result for query: " + str(query) + " is:")
-                for tweetId in search_and_rank_query(query, num_docs_to_retrieve, pa, output_path, lda):
-                    print(str(i) + '. tweet id: ' + str(tweetId[0]))
-                    i += 1
-            f.close()
+                print("the result for query: " + str(line)[3:-2] + " is:")
+                for tweetId in search_and_rank_query(line[3:-2], num_docs_to_retrieve, pa, output_path, lda):
+                  print(str(i) + '. tweet id: ' + str(tweetId[0]))
+                i += 1
+            file.close()
         except:
             print("not working")
 
