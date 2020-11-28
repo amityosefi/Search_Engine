@@ -13,10 +13,10 @@ class Searcher:
         :param inverted_index: dictionary of inverted index
         """
         self.parser = parser
-        self.ranker = Ranker()
+        self.ranker = Ranker(path)
         self.path = path
         self.lda = lda
-
+        self.counter = 1
     def relevant_docs_from_posting(self, query):
         """
         This function loads the posting list and count the amount of relevant documents per term.
@@ -24,7 +24,6 @@ class Searcher:
         :return: dictionary of relevant documents.
         """
         # posting = utils.load_obj("posting.pkl")
-        print("start searcher")
 
         try:  # an example of checks that you have to do
             with (open(self.path + '\\searcher.pkl', "rb")) as openfile:
@@ -36,8 +35,7 @@ class Searcher:
         except:
             print('term not found in posting')
 
-        relevant_docs = {}
-
+        relevant_docs = []
         query = self.parser.parse_sentence(query)
         new_bow = self.lda.dictionary.doc2bow(query)
         topic_vector = self.lda.lda_model.get_document_topics(bow=new_bow)
@@ -48,11 +46,13 @@ class Searcher:
                     mx = topic[1]
         # print(topic_vector)
         # topic_vector = self.lda.lda_model[self.bow_corpus[self.lda.counter]]
+
         for topicID, prob in topic_vector:
             if prob > 0.6 or prob >= mx:
                 for doc in objects[topicID]:
-                    relevant_docs[doc[0]] = ''
+                    relevant_docs.append(doc[0])
         print(len(relevant_docs))
+        # print(relevant_docs)
         return relevant_docs
 
         # posting = utils.load_obj("posting")

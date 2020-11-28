@@ -31,7 +31,7 @@ class Indexer:
 
         document_dictionary = document.term_doc_dictionary
 
-        self.documents[self.doc_counter] = [document.tweet_id, document.max_tf, document.num_of_unique_words]
+        # self.documents[document.tweet_id] = [document.max_tf, document.num_of_unique_words, document_dictionary]
         self.doc_counter += 1
 
         self.lda.addDoc(document)
@@ -55,13 +55,16 @@ class Indexer:
                 self.terms_idx[posting_name].append(term)
 
                 if term not in self.postingDict:
-                    self.postingDict[term] = []
+                    self.postingDict[term] = {}
+
+                term_dict = {}
 
                 if document.doc_length > 0:
-                    self.postingDict[term].append([document.tweet_id, document_dictionary[term],
-                                               "%.3f" % float(document_dictionary[term] / document.doc_length)]) #tf
+                    term_dict[document.tweet_id] = [document_dictionary[term], "%.3f" % float(document_dictionary[term] / document.max_tf)]
                 else:
-                    self.postingDict[term].append([document.tweet_id, document_dictionary[term], 0.9])
+                    term_dict[document.tweet_id] = [document_dictionary[term], 0.9]
+
+                self.postingDict[term].update(term_dict)
 
                 if posting_name not in self.postingcounter:
                     self.postingcounter[posting_name] = 0
@@ -119,16 +122,23 @@ class Indexer:
 
     def merge_posting_files(self):
 
-        num_of_documents = len(self.documents)
+        self.add_the_rest_terms()
+
+        num_of_documents = self.doc_counter
+
+        # docs_file = open(self.config + '\\' + 'documents.pkl', "wb")
+        # pickle.dump(self.documents, docs_file)
+        # docs_file.close()
+        # self.documents.clear()
 
         common_terms = self.find_common_terms()
         common_terms_dict = {}
 
-        self.add_the_rest_terms()
-
+        merged_dict = {}
+        # objects = {}
         for posting_name in self.postingcounter:
-            merged_dict = {}
-            objects = {}
+            #merged_dict = {}
+            #objects = {}
             posting_lst = self.find_posting_files(posting_name)
             #if len(posting_lst) == 1:
              #   continue
@@ -136,34 +146,39 @@ class Indexer:
                 with (open(file, "rb")) as openfile:
                     while True:
                         try:
-                            objects = pickle.load(openfile)
+                            posting_name_dict = pickle.load(openfile)
                         except EOFError:
                             break
                 os.remove(file)
-                for term in objects:
+                for term in posting_name_dict:
                     lower_term = str(term).lower()
                     temp = term
                     if lower_term in Parse.corpus_dict:
                         temp = lower_term
 
                     if temp in common_terms:
-                        common_terms_dict[temp] = objects[term]
-                        common_terms_dict[temp].extend([math.log2(num_of_documents / self.inverted_idx[term])])  #idf
+                        documents_posting_name_dict = posting_name_dict[term]
+                        documents_posting_name_dict['idf'] = math.log2(num_of_documents / self.inverted_idx[term]) #idf
+                        common_terms_dict[temp] = documents_posting_name_dict
                     else:
-                        merged_dict[temp] = objects[term]
-                        merged_dict[temp].extend([math.log2(num_of_documents/self.inverted_idx[term])]) #idf
+                        documents_posting_name_dict = posting_name_dict[term]
+                        documents_posting_name_dict['idf'] = math.log2(num_of_documents / self.inverted_idx[term]) #idf
+                        merged_dict[temp] = documents_posting_name_dict
+
+                posting_name_dict.clear()
 
             merged_file = open(self.config + '\\' + posting_name + '.pkl', "wb")
             pickle.dump(merged_dict, merged_file)
             merged_file.close()
+            merged_dict.clear()
+
+        self.postingcounter.clear()
+        self.inverted_idx.clear()
 
         common_terms_file = open(self.config + '\\' + 'common.pkl', "wb")
         pickle.dump(common_terms_dict, common_terms_file)
-        merged_file.close()
-
-        docs_file = open(self.config + '\\' + 'documents.pkl', "wb")
-        pickle.dump(self.documents, docs_file)
-        merged_file.close()
+        common_terms_file.close()
+        common_terms_dict.clear()
 
     def find_posting_files(self, posting_name):
         posting_lst = []
@@ -177,7 +192,9 @@ class Indexer:
     def find_common_terms(self):
         sorted_terms = sorted(self.inverted_idx, key=self.inverted_idx.get, reverse=True)
         first_20 = int(0.2 * len(sorted_terms))
-        return sorted_terms[:first_20]
+        sorted_first_20 = sorted_terms[:first_20]
+        sorted_terms_dict = {sorted_first_20[i]: 0 for i in range(0, len(sorted_first_20))}
+        return sorted_terms_dict
 
     def add_the_rest_terms(self):
         for key in self.terms_idx:
@@ -192,3 +209,5 @@ class Indexer:
             f = open(self.config + '\\' + posting_name + '.pkl', 'ab')
             pickle.dump(temp_term_dict, f)
             f.close()
+
+        self.terms_idx.clear()

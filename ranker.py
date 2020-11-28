@@ -1,9 +1,10 @@
 import gensim as gensim
 from sklearn.decomposition import LatentDirichletAllocation as LDA
 
+
 class Ranker:
-    def __init__(self):
-        pass
+    def __init__(self, path):
+        self.path = path
 
     @staticmethod
     def rank_relevant_doc(relevant_doc):
@@ -14,10 +15,7 @@ class Ranker:
         :return: sorted list of documents by score
         """
 
-
-
-
-        return sorted(relevant_doc.items(), key=lambda item: item[1], reverse=True)
+        return sorted(relevant_doc, key=lambda item: item, reverse=True)
 
     @staticmethod
     def retrieve_top_k(sorted_relevant_doc, k=2000):

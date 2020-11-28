@@ -45,7 +45,7 @@ class LDA:
         for docID in range(self.counter):
             topic_vector = self.lda_model[self.bow_corpus[docID]]
             for topicID, prob in topic_vector:
-                if prob > 0.9:
+                if prob > 0.4:
                     if topicID in topic_dict:
                         topic_dict[topicID].append([self.docs[docID],prob])
                     else:
@@ -55,10 +55,8 @@ class LDA:
         pickle.dump(topic_dict, f)
         f.close()
 
-        print("topic 0 with :" + str(len(topic_dict[0])) + " docs")
-        print("topic 1 with :" + str(len(topic_dict[1])) + " docs")
-        print("topic 2 with :" + str(len(topic_dict[2])) + " docs")
-
-
+        # print("topic 0 with :" + str(len(topic_dict[0])) + " docs")
+        # print("topic 1 with :" + str(len(topic_dict[1])) + " docs")
+        # print("topic 2 with :" + str(len(topic_dict[2])) + " docs")
 
         topic_dict.clear()
