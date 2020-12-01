@@ -29,7 +29,7 @@ class LDA:
             data = data + [list(dict[tweet_id][0])]
 
         dictionary = Dictionary(data)
-        print("start build the model2")
+        # print("start build the model2")
         class MyCorpus:
             def __iter__(self):
                 for line in data:
@@ -39,8 +39,8 @@ class LDA:
                     yield doc
 
         start = time.time()
-        print("start build the model3")
-        lda_model = LdaModel(corpus=MyCorpus(), num_topics=10, id2word=dictionary)
+        # print("start build the model3")
+        lda_model = LdaModel(corpus=MyCorpus(), num_topics=100, id2word=dictionary)
         end = time.time() - start
         print("the time takes to build the lda model is: " + str(end) + "sec")
 
@@ -50,7 +50,7 @@ class LDA:
         with open(self.path + '\\ldadictionary.pkl', 'wb') as f:
             pickle.dump(dictionary, f)
 
-        for batch in grouper(MyCorpus(), 1000):
+        for batch in grouper(MyCorpus(), 50000):
             # approach 1:
             # batch_topics = list(filter(partial(is_not, None), batch))
             # index_matrix = similarities.MatrixSimilarity(self.lda_model[batch])
