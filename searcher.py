@@ -1,5 +1,6 @@
 import pickle
 
+import LDAModel
 from parser_module import Parse
 from ranker import Ranker
 from parser_module import Parse
@@ -37,17 +38,17 @@ class Searcher:
             else:
                 new_query_tokens.append(token)
 
-        with open(self.path + '\\ldamodel.pkl', 'rb') as handle:
+        with open(self.path + '\\ldamodelpickle.pkl', 'rb') as handle:
             lda_model = pickle.load(handle)
 
         with open(self.path + '\\ldadictionary.pkl', 'rb') as handle:
             dictionary = pickle.load(handle)
 
+        # lda_model = LDAModel.lda_model
         query_tokens = new_query_tokens
-        new_query_tokens.clear()
+        dictquery = {new_query_tokens[i]: 0 for i in range(0, len(new_query_tokens))}
         new_bow = dictionary.doc2bow(query_tokens)
         topic_vector = lda_model.get_document_topics(bow=new_bow)
-        print(topic_vector)
 
         mx = 0
         if len(topic_vector) > 1:
@@ -55,25 +56,24 @@ class Searcher:
                 if topic[1] > mx:
                     mx = topic[1]
 
-        print("the prob of the query is: " +str(mx))
+        print("the prob of the query is: " + str(mx))
 
         # print(topic_vector)
         # topic_vector = self.lda.lda_model[self.bow_corpus[self.lda.counter]]
 
-        try:  # an example of checks that you have to do
-            with (open(self.path + '\\searcher.pkl', "rb")) as openfile:
-                while True:
-                    try:
-                        dict = pickle.load(openfile)
-                    except EOFError:
-                        break
-        except:
-            print('term not found in posting')
+        with open(self.path + '\\searcher.pkl', 'rb') as handle:
+            dict = pickle.load(handle)
+
+        with open(self.path + '\\documents.pkl', 'rb') as handle:
+            documents = pickle.load(handle)
 
         for topicID, prob in topic_vector:
-            if prob > 0.6 or prob >= mx:
+            if prob > 0.75 or prob >= mx:
                 for doc in dict[topicID]:
-                    relevant_docs.append(doc[0])
+                    for term in documents[doc[0]][0]:
+                        if term in dictquery:
+                            relevant_docs.append(doc[0])
+                            break
 
         #print(len(relevant_docs))
         #print(relevant_docs)

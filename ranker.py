@@ -6,6 +6,26 @@ class Ranker:
     def __init__(self, output_path):
         self.output_path = output_path
         self.terms_dict = {}
+        self.documents = {}
+        self.common = {}
+
+    def load_docs_and_terms(self):
+
+        with (open(self.output_path + '\\documents.pkl', "rb")) as openfile:
+            while True:
+                try:
+                    self.documents = pickle.load(openfile)
+                except EOFError:
+                    break
+
+        with (open(self.output_path + '\\common.pkl', "rb")) as openfile:
+            while True:
+                try:
+                    self.common = pickle.load(openfile)
+                except EOFError:
+                    break
+        self.terms_dict.update(self.common)
+
 
     def find_posting_name(self, term):
 
@@ -41,21 +61,7 @@ class Ranker:
 
         query_tokens_dict = {query_tokens[i]: 0 for i in range(0, len(query_tokens))}
 
-        with (open(self.output_path + '\\documents.pkl', "rb")) as openfile:
-            while True:
-                try:
-                    documents_dict = pickle.load(openfile)
-                except EOFError:
-                    break
 
-        with (open(self.output_path + '\\common.pkl', "rb")) as openfile:
-            while True:
-                try:
-                    common_terms_dict = pickle.load(openfile)
-                except EOFError:
-                    break
-
-        self.terms_dict.update(common_terms_dict)
         # self.documents[document.tweet_id] = [document.max_tf, document.num_of_unique_words, document_dictionary]
         # self.postingDict[term].append([document.tweet_id, document_dictionary[term],
         #                                "%.3f" % float(document_dictionary[term] / document.max_tf), (num_of_documents / self.inverted_idx[term])])  # tf
@@ -68,7 +74,7 @@ class Ranker:
             sum_of_squared_weights = 0
             num_of_same_tokens = num_of_query_tokens
             document = str(document)
-            doc_terms_dict = documents_dict[document]
+            doc_terms_dict = self.documents[document][0]
             for term in doc_terms_dict:
                 term = str(term)
                 if term not in query_tokens_dict:
@@ -106,6 +112,10 @@ class Ranker:
 
 
         sorted_relevant_docs = sorted(cosSimilarity_dict, key=cosSimilarity_dict.get, reverse=True)
+        sort = sorted_relevant_docs[:20]
+        for doc in sort:
+            print(doc + "with rank of" + str(cosSimilarity_dict[doc]))
+        print()
         return sorted_relevant_docs
 
         # return sorted(relevant_doc.items(), key=lambda item: item[1], reverse=True)

@@ -275,7 +275,8 @@ class Parse:
         #print(full_text)
         #print(self.term_dict)
 
-        if (tweet_id=='1288842468205531136' or tweet_id == '1288843797263253506' or tweet_id == '1288850711355305986' or tweet_id == '1288846700384157696' or tweet_id == '1288847867763982336'):
+        if (tweet_id=='1288844166173208576'):
+            print("--------------------------------------------")
             print(full_text)
 
         document = Document(tweet_id, tweet_date, full_text, url, retweet_text, retweet_url, quote_text,

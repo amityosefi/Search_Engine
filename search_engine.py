@@ -1,6 +1,7 @@
 import csv
 import time
 
+from LDAModel import LDA
 from reader import ReadFile
 from configuration import ConfigClass
 from parser_module import Parse
@@ -28,14 +29,13 @@ def run_engine(corpus_path, output_path, stemming=False):
         parseAndIndexDocuments(documents_list, p, indexer)
     else:
         documents_list = r.read_dir()
+
         while documents_list:
             parseAndIndexDocuments(documents_list, p, indexer)
             documents_list = r.read_dir()
     # Iterate over every document in the file
     # documents_list = documents_list[:500]
-    while documents_list:
-        parseAndIndexDocuments(documents_list, p, indexer)
-        documents_list = r.read_dir()
+
 
     documents_list.clear()
 
@@ -44,7 +44,8 @@ def run_engine(corpus_path, output_path, stemming=False):
     indexer.merge_posting_files()
     e = time.time() - s
     print("merge time: " + str(e) + " secs.")
-    indexer.lda.build_ldaModel()
+    lda = LDA(output_path)
+    lda.build_ldaModel()
 
     x = str(indexer.count)
     en = time.time()-start
@@ -63,8 +64,8 @@ def parseAndIndexDocuments(documents_list, p, indexer):
         indexer.add_new_doc(parsed_document)
 
 
-def search_and_rank_query(query, num_docs_to_retrieve, p, output_path):
-    searcher = Searcher(p, output_path)
+def search_and_rank_query(query, num_docs_to_retrieve, searcher):
+
     relevant_docs, query_tokens = searcher.relevant_docs_from_posting(query)
     ranked_relevant_docs = searcher.ranker.rank_relevant_doc(relevant_docs, query_tokens)
     most_relevent_docs = searcher.ranker.retrieve_top_k(ranked_relevant_docs, num_docs_to_retrieve)
@@ -78,13 +79,16 @@ def main(corpus_path, output_path, stemming, queries, num_docs_to_retrieve=2000)
     # lda = 5
 
     pa = Parse(stemming)
+    searcher = Searcher(pa, output_path)
+    searcher.ranker.load_docs_and_terms()
+
     if isinstance(queries, list):
         j = 1
         for query in queries:
             i = 0
             tweetid_rank = []
             print("the results for query: " + str(query) + ". are:")
-            for tweetId in search_and_rank_query(query, num_docs_to_retrieve, pa, output_path):
+            for tweetId in search_and_rank_query(query, num_docs_to_retrieve, searcher):
                 print(str(i) + '. tweet id: ' + str(tweetId))
                 tweetid_rank.append(tweetId)
                 i += 1
@@ -102,8 +106,9 @@ def main(corpus_path, output_path, stemming, queries, num_docs_to_retrieve=2000)
             tweetid_rank = []
             if line == '\n' or line == '':
                 continue
-            print(str(j) + ". the results for query: " + str(line)[:-2] + ". are:")
-            for tweetId in search_and_rank_query(line[:-2], num_docs_to_retrieve, pa, output_path):
+            line = str(line[3:-2])
+            print(str(j) + ". the results for query: " + line + ". are:")
+            for tweetId in search_and_rank_query(line, num_docs_to_retrieve, searcher):
                 # print(str(i) + '. tweet id: ' + str(tweetId[0]))
                 tweetid_rank.append(tweetId)
                 i += 1

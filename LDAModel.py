@@ -6,8 +6,9 @@ from pprint import pprint
 from gensim import similarities
 from gensim.corpora import Dictionary
 from gensim.models import LdaModel
+from gensim.test.utils import datapath
 from smart_open import open
-
+lda_model = None
 
 class LDA:
 
@@ -27,52 +28,62 @@ class LDA:
             self.docs[self.counter] = tweet_id
             self.counter += 1
             data = data + [list(dict[tweet_id][0])]
-
         dictionary = Dictionary(data)
-        print("start build the model2")
-        class MyCorpus:
-            def __iter__(self):
-                for line in data:
-                    doc = dictionary.doc2bow(line)
-                    if len(doc) < 1:
-                        continue
-                    yield doc
+
+        # class MyCorpus:
+        #     def __iter__(self):
+        #         for line in data:
+        #             doc = dictionary.doc2bow(line)
+        #             if len(doc) < 1:
+        #                 continue
+        #             yield doc
+
 
         start = time.time()
-        print("start build the model3")
-        lda_model = LdaModel(corpus=MyCorpus(), num_topics=10, id2word=dictionary)
+        global lda_model
+        corpus = [dictionary.doc2bow(text) for text in data]
+        data.clear()
+        lda_model = LdaModel(corpus=corpus, num_topics=15, id2word=dictionary)
         end = time.time() - start
         print("the time takes to build the lda model is: " + str(end) + "sec")
 
-        with open(self.path + '\\ldamodel.pkl', 'wb') as f:
-            pickle.dump(lda_model, f)
-
-        with open(self.path + '\\ldadictionary.pkl', 'wb') as f:
-            pickle.dump(dictionary, f)
-
-        for batch in grouper(MyCorpus(), 1000):
+        # for batch in grouper(MyCorpus(), 1000):
             # approach 1:
             # batch_topics = list(filter(partial(is_not, None), batch))
             # index_matrix = similarities.MatrixSimilarity(self.lda_model[batch])
             # print(index_matrix.index[3][3])
             # pprint(lda_model.show_topics(formatted=False))
-            try:
-                for i, row in enumerate(lda_model[batch]):
-                    row = sorted(row, key=lambda x: (x[1]), reverse=True)
-                    # Get the Dominant topic, Perc Contribution and Keywords for each document
-                    for j, (topic_num, prop_topic) in enumerate(row):
-                        if j != 0:
-                            break
-                          # => dominant topic
-                        if prop_topic > 0.7:
-                            if topic_num in self.topic_dict:
-                                self.topic_dict[topic_num].append([self.docs[self.counter2], prop_topic])
-                            else:
-                                self.topic_dict[topic_num] = [[self.docs[self.counter2], prop_topic]]
-                        print(self.counter2)
-                        self.counter2 += 1
-            except:
-                print('problem with the lda model')
+        try:
+            for i, row in enumerate(lda_model[corpus]):
+                row = sorted(row, key=lambda x: (x[1]), reverse=True)
+                # Get the Dominant topic, Perc Contribution and Keywords for each document
+                for j, (topic_num, prop_topic) in enumerate(row):
+                    if j != 0:
+                        break
+                      # => dominant topic
+                    if prop_topic > 0.75:
+                        if topic_num in self.topic_dict:
+                            self.topic_dict[topic_num].append([self.docs[self.counter2], prop_topic])
+                        else:
+                            self.topic_dict[topic_num] = [[self.docs[self.counter2], prop_topic]]
+                    # print(self.counter2)
+                    self.counter2 += 1
+        except:
+            print('problem with the lda model')
+
+        with open(self.path + '\\ldamodelpickle.pkl', 'wb') as f:
+            pickle.dump(lda_model, f)
+
+        lda_model.save(datapath(self.path + '\\ldamodeldatapath.pkl'))
+
+        lda_model = None
+
+        with open(self.path + '\\ldadictionary.pkl', 'wb') as f:
+            pickle.dump(dictionary, f)
+
+        with open(self.path + '\\searcher.pkl', 'wb') as f:
+            pickle.dump(self.topic_dict, f)
+        self.topic_dict.clear()
 
                         # wp = lda_model.show_topic(topic_num)
                         # print(wp)
@@ -86,10 +97,7 @@ class LDA:
             #         if prob > 0.7:
             #             self.topic_dict[topicID].append((docID, prob))
 
-        x = 8
-        with open(self.path + '\\searcher.pkl', 'wb') as f:
-            pickle.dump(self.topic_dict, f)
-        self.topic_dict.clear()
+
 
         # print(batch_topics)
 

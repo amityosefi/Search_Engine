@@ -1,4 +1,3 @@
-from LDAModel import LDA
 from parser_module import Parse
 import pickle
 import os
@@ -17,7 +16,6 @@ class Indexer:
         self.documents = {} # key = tweet id , value = term dict, max_tf, num of unique words
         self.numberToCharDict = {'0': 'a', '1': 'b', '2': 'c', '3': 'd', '4': 'e', '5': 'f', '6': 'g', '7': 'h', '8': 'i', '9': 'j'}
         self.doc_counter = 0
-        self.lda = LDA(output_path)
         self.count = 0
 
     def add_new_doc(self, document):
@@ -40,12 +38,12 @@ class Indexer:
         self.documents_idx[document_name].update(documentsTempDict)
         if document_name not in self.documentsCounter:
             self.documentsCounter[document_name] = 0
-        if len(self.documents_idx[document_name]) == 500000:
+        if len(self.documents_idx[document_name]) == 50000:
             self.uploadDocumnetToPostingFile(document_name)
             self.documentsCounter[document_name] += 1
 
         self.doc_counter += 1
-        # self.lda.addDoc(document)
+        #self.lda.addDoc(document)
 
         # Go over each term in the doc
         for term in document_dictionary:
@@ -69,6 +67,8 @@ class Indexer:
                     self.postingDict[term] = {}
 
                 term_dict = {}
+
+
 
                 if document.doc_length > 0:
                     term_dict[document.tweet_id] = "%.3f" % float(document_dictionary[term] / document.max_tf) #tf
@@ -159,10 +159,12 @@ class Indexer:
 
         common_terms = self.find_common_terms()
         common_terms_dict = {}
+        common_count = 0
 
         self.uploadDocumentsFromPosting()
 
         merged_dict = {}
+
         for posting_name in self.postingcounter:
             objects = {}
             posting_lst = self.find_posting_files(posting_name)
@@ -180,71 +182,128 @@ class Indexer:
                 except:
                     print("no such a file of name" + str(posting_name))
 
+                new_posting_name_dict = {}
+
                 for term in posting_name_dict:
-                    changing_flag = False
+
+                    # changing_flag = False
                     lower_term = str(term).lower()
-                    temp = term
-                    if temp == lower_term:
-                        temp = lower_term
-                    elif lower_term in Parse.corpus_dict:
-                        temp = lower_term
-                        changing_flag = True
+                    # temp = term
+                    # if temp == lower_term:
+                    #     temp = lower_term
+                    # elif lower_term in Parse.corpus_dict:
+                    #     temp = lower_term
+                    #     changing_flag = True
 
-                    if temp in merged_dict or temp in common_terms_dict:
-                        continue
+                    # if temp in merged_dict or temp in common_terms_dict:
+                    #     continue
 
-                    if changing_flag:
+                    if lower_term in Parse.corpus_dict:
                         for doc_id in self.inverted_idx[term]:
                             val = self.documents[doc_id][0][term]
-                            self.documents[doc_id][0][lower_term] = val
+                            if lower_term in self.documents[doc_id][0]:
+                                self.documents[doc_id][0][lower_term] += val
+                            else:
+                                self.documents[doc_id][0][lower_term] = val
                             self.documents[doc_id][0].pop(term)
 
-                    if temp in common_terms:
-                        documents_posting_name_dict = posting_name_dict[term]
+                        tmp_docs = self.inverted_idx[term]
+                        self.inverted_idx.pop(term)
+                        if lower_term not in self.inverted_idx:
+                            self.inverted_idx[lower_term] = []
+                        for d in tmp_docs:
+                            if d not in self.inverted_idx[lower_term]:
+                                self.inverted_idx[lower_term].append(d)
+
+                        if lower_term not in posting_name_dict:
+                            posting_name_dict[lower_term] = {}
+                        posting_name_dict[lower_term].update(posting_name_dict[term])
+                        new_posting_name_dict[lower_term] = posting_name_dict[lower_term]
+                    else:
+                        new_posting_name_dict[term] = posting_name_dict[term]
+
+                posting_name_dict = new_posting_name_dict
+
+                for term in posting_name_dict:
+                    documents_posting_name_dict = posting_name_dict[term]
+                    if term in common_terms:
                         if term not in common_terms_dict:
                             documents_posting_name_dict['idf'] = "%.3f" % float(math.log2(num_of_documents / len(self.inverted_idx[term])))  # idf
-                            common_terms_dict[temp] = documents_posting_name_dict
+                            common_terms_dict[term] = documents_posting_name_dict
                         else:
-                            common_terms_dict[temp].update(documents_posting_name_dict)
+                            common_terms_dict[term].update(documents_posting_name_dict)
                     else:
-                        documents_posting_name_dict = posting_name_dict[term]
-                        if temp not in merged_dict:
-                            documents_posting_name_dict['idf'] = "%.3f" % (math.log2(num_of_documents / len(self.inverted_idx[term]))) # idf
-                            merged_dict[temp] = documents_posting_name_dict
+                        if term not in merged_dict:
+                            documents_posting_name_dict['idf'] = "%.3f" % (math.log2(num_of_documents / len(self.inverted_idx[term])))  # idf
+                            merged_dict[term] = documents_posting_name_dict
                         else:
-                            merged_dict[temp].update(documents_posting_name_dict)
+                            merged_dict[term].update(documents_posting_name_dict)
 
                 posting_name_dict.clear()
+                new_posting_name_dict.clear()
 
             merged_file = open(self.config + '\\' + posting_name + '.pkl', "wb")
             pickle.dump(merged_dict, merged_file)
             merged_file.close()
             merged_dict.clear()
 
+            common_terms_file = open(self.config + '\\' + 'common' + str(common_count) + '.pkl', "wb")
+            pickle.dump(common_terms_dict, common_terms_file)
+            common_terms_file.close()
+            common_terms_dict.clear()
+            common_count += 1
+
         self.postingcounter.clear()
         self.inverted_idx.clear()
 
-        common_terms_file = open(self.config + '\\' + 'common.pkl', "wb")
-        pickle.dump(common_terms_dict, common_terms_file)
-        common_terms_file.close()
-        common_terms_dict.clear()
+        # common_terms_file = open(self.config + '\\' + 'common.pkl', "wb")
+        # pickle.dump(common_terms_dict, common_terms_file)
+        # common_terms_file.close()
+        # common_terms_dict.clear()
 
-        docs_file = open(self.config + '\\' + 'documents.pkl', "wb")
+        docs_file = open(self.config + '\\documents.pkl', "wb")
         pickle.dump(self.documents, docs_file)
         docs_file.close()
         self.documents.clear()
 
         #self.postingcounter.clear()
 
+        self.mergeCommonFiles(common_count)
+
+    def mergeCommonFiles(self, common_coumnt):
+
+        common_name_dict = {}
+
+        for i in range(common_coumnt):
+            common_name_file = "common" + str(i)
+            file_path = self.config + '\\' + common_name_file + '.pkl'
+            temp_common_name_dict = {}
+            with (open(file_path, "rb")) as openfile:
+                while True:
+                    try:
+                        temp_common_name_dict = pickle.load(openfile)
+                    except EOFError:
+                        break
+            try:
+                os.remove(file_path)
+            except:
+                print("no such a file of name" + str(i))
+
+            common_name_dict.update(temp_common_name_dict)
+
+        f = open(self.config + '\\common.pkl', 'wb')
+        pickle.dump(common_name_dict, f)
+        f.close()
+
 
     def find_posting_files(self, posting_name):
-        posting_lst = []
-        num_of_posting = self.postingcounter[posting_name] + 1
-        for i in range(num_of_posting):
-            file_path = self.config + '\\' + posting_name + str(i) + '.pkl'
-            posting_lst.append(file_path)
+            posting_lst = []
+            num_of_posting = self.postingcounter[posting_name] + 1
+            for i in range(num_of_posting):
+                file_path = self.config + '\\' + posting_name + str(i) + '.pkl'
+                posting_lst.append(file_path)
 
-        return posting_lst
+            return posting_lst
 
     def find_common_terms(self):
         sorted_terms = sorted(self.inverted_idx, key=self.inverted_idx.get, reverse=True)
