@@ -68,8 +68,6 @@ class Indexer:
 
                 term_dict = {}
 
-
-
                 if document.doc_length > 0:
                     term_dict[document.tweet_id] = "%.3f" % float(document_dictionary[term] / document.max_tf) #tf
                 else:
@@ -170,6 +168,7 @@ class Indexer:
             posting_lst = self.find_posting_files(posting_name)
             #if len(posting_lst) == 1:
              #   continue
+
             for file in posting_lst:
                 with (open(file, "rb")) as openfile:
                     while True:
@@ -184,64 +183,88 @@ class Indexer:
 
                 new_posting_name_dict = {}
 
+                # if "COVID" in posting_name_dict:
+                #     print(posting_name_dict["COVID"])
+                # if "covid" in posting_name_dict:
+                #     print(posting_name_dict["covid"])
+
                 for term in posting_name_dict:
 
-                    # changing_flag = False
                     lower_term = str(term).lower()
-                    # temp = term
-                    # if temp == lower_term:
-                    #     temp = lower_term
-                    # elif lower_term in Parse.corpus_dict:
-                    #     temp = lower_term
-                    #     changing_flag = True
+                    if (term != lower_term) and (lower_term in Parse.corpus_dict):
+                        if lower_term not in self.inverted_idx:
+                            self.inverted_idx[lower_term] = []
+                        if lower_term not in new_posting_name_dict:
+                            new_posting_name_dict[lower_term] = {}
+                        if lower_term in posting_name_dict:
+                             new_posting_name_dict[lower_term].update(posting_name_dict[lower_term])
+                        # print(new_posting_name_dict[lower_term])
 
-                    # if temp in merged_dict or temp in common_terms_dict:
-                    #     continue
-
-                    if lower_term in Parse.corpus_dict:
                         for doc_id in self.inverted_idx[term]:
+                            # if doc_id == "1288844267688022016":
+                            #     print("vfdfdv")
                             val = self.documents[doc_id][0][term]
+                            # print(self.documents[doc_id][0])
                             if lower_term in self.documents[doc_id][0]:
                                 self.documents[doc_id][0][lower_term] += val
                             else:
                                 self.documents[doc_id][0][lower_term] = val
                             self.documents[doc_id][0].pop(term)
 
-                        tmp_docs = self.inverted_idx[term]
+                            # print(self.documents[doc_id][0])
+                            # print(new_posting_name_dict[lower_term])
+
+                            new_val = self.documents[doc_id][0][lower_term]
+                            current_max_tf = self.documents[doc_id][1]
+                            if current_max_tf < new_val:
+                                self.documents[doc_id][1] = new_val
+
+                            # if not flag:
+                            # if lower_term in new_posting_name_dict:
+                            #     print(new_posting_name_dict[lower_term])
+                            new_tf = float(new_val/(self.documents[doc_id][1]))
+                            new_posting_name_dict[lower_term][doc_id] = "%.3f" % new_tf
+
+                            # print(new_posting_name_dict[lower_term])
+
+                            # print(posting_name_dict[lower_term])
+
+                            if doc_id not in self.inverted_idx[lower_term]:
+                                self.inverted_idx[lower_term].append(doc_id)
+
                         self.inverted_idx.pop(term)
-                        if lower_term not in self.inverted_idx:
-                            self.inverted_idx[lower_term] = []
-                        for d in tmp_docs:
-                            if d not in self.inverted_idx[lower_term]:
-                                self.inverted_idx[lower_term].append(d)
 
-                        if lower_term not in posting_name_dict:
-                            posting_name_dict[lower_term] = {}
-                        posting_name_dict[lower_term].update(posting_name_dict[term])
-                        new_posting_name_dict[lower_term] = posting_name_dict[lower_term]
-                    else:
-                        new_posting_name_dict[term] = posting_name_dict[term]
+                    elif term not in new_posting_name_dict:
+                            new_posting_name_dict[term] = posting_name_dict[term]
 
-                posting_name_dict = new_posting_name_dict
+                #posting_name_dict.clear()
+                #posting_name_dict = new_posting_name_dict
+                #print(new_posting_name_dict)
 
-                for term in posting_name_dict:
-                    documents_posting_name_dict = posting_name_dict[term]
-                    if term in common_terms:
-                        if term not in common_terms_dict:
-                            documents_posting_name_dict['idf'] = "%.3f" % float(math.log2(num_of_documents / len(self.inverted_idx[term])))  # idf
-                            common_terms_dict[term] = documents_posting_name_dict
-                        else:
-                            common_terms_dict[term].update(documents_posting_name_dict)
-                    else:
-                        if term not in merged_dict:
-                            documents_posting_name_dict['idf'] = "%.3f" % (math.log2(num_of_documents / len(self.inverted_idx[term])))  # idf
-                            merged_dict[term] = documents_posting_name_dict
-                        else:
-                            merged_dict[term].update(documents_posting_name_dict)
+                # if "covid" in new_posting_name_dict:
+                #     print(new_posting_name_dict["covid"])
 
-                posting_name_dict.clear()
-                new_posting_name_dict.clear()
+            for term in new_posting_name_dict:
 
+                documents_posting_name_dict = new_posting_name_dict[term]
+                # documents_posting_name_dict['idf'] = "%.3f" % (math.log2(num_of_documents / len(self.inverted_idx[term])))  # idf
+                documents_posting_name_dict['idf'] = "%.3f" % (num_of_documents / len(self.inverted_idx[term]))  # idf
+                num_docs_of_the_term = len(self.inverted_idx[term])
+                self.inverted_idx[term] = num_docs_of_the_term
+                if term in common_terms:
+                    common_terms_dict[term] = documents_posting_name_dict
+                else:
+                    merged_dict[term] = documents_posting_name_dict
+                # if term in common_terms:
+                #     if term not in common_terms_dict:
+                #         common_terms_dict[term] = {}
+                #     common_terms_dict[term].update(documents_posting_name_dict)
+                # elif term not in common_terms:
+                #     if term not in merged_dict:
+                #         merged_dict[term] = {}
+                #     merged_dict[term].update(documents_posting_name_dict)
+
+            new_posting_name_dict.clear()
             merged_file = open(self.config + '\\' + posting_name + '.pkl', "wb")
             pickle.dump(merged_dict, merged_file)
             merged_file.close()
@@ -254,7 +277,6 @@ class Indexer:
             common_count += 1
 
         self.postingcounter.clear()
-        self.inverted_idx.clear()
 
         # common_terms_file = open(self.config + '\\' + 'common.pkl', "wb")
         # pickle.dump(common_terms_dict, common_terms_file)
@@ -269,6 +291,10 @@ class Indexer:
         #self.postingcounter.clear()
 
         self.mergeCommonFiles(common_count)
+        docs_file = open(self.config + '\\inverted_idx.pkl', "wb")
+        pickle.dump(self.documents, docs_file)
+        self.inverted_idx.clear()
+
 
     def mergeCommonFiles(self, common_coumnt):
 

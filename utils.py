@@ -1,5 +1,6 @@
 import pickle
-
+import os.path
+from  configuration import ConfigClass
 
 def save_obj(obj, name):
     """
@@ -20,3 +21,12 @@ def load_obj(name):
     """
     with open(name + '.pkl', 'rb') as f:
         return pickle.load(f)
+
+
+def load_inverted_index():
+    with open(ConfigClass.get_savedFileMainFolder() + '\\inverted_idx.pkl', 'rb') as f:
+        return pickle.load(f)
+
+
+def check_inverted_index(output_path):
+    return os.path.isfile(output_path + '\\inverted_idx.pkl')
