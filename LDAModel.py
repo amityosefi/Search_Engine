@@ -63,7 +63,7 @@ class LDA:
                     if j != 0:
                         break
                     # => dominant topic
-                    if prop_topic > 0.75:
+                    if prop_topic > 0.865:
                         if topic_num in self.topic_dict:
                             self.topic_dict[topic_num].append([self.docs[self.counter2], prop_topic])
                         else:
