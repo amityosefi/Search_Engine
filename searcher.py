@@ -18,6 +18,7 @@ class Searcher:
         self.ranker = Ranker(output_path)
         self.path = output_path
         self.counter = 1
+        self.inverted_idx = {}
 
     def relevant_docs_from_posting(self, query):
         """
@@ -33,7 +34,7 @@ class Searcher:
             token = str(token)
             if token == token.lower():
                 new_query_tokens.append(token)
-            elif token.lower() in Parse.corpus_dict:
+            elif token.lower() in inverted_idx:
                 new_query_tokens.append(token.lower())
             else:
                 new_query_tokens.append(token)
@@ -41,7 +42,7 @@ class Searcher:
         with open(self.path + '\\ldamodelpickle.pkl', 'rb') as handle:
             lda_model = pickle.load(handle)
 
-        with open(self.path + '\\ldadictionary.pkl', 'rb') as handle:
+        with open(self.path + '\\.pkl', 'rb') as handle:
             dictionary = pickle.load(handle)
 
         # lda_model = LDAModel.lda_model

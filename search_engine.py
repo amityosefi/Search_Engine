@@ -1,5 +1,3 @@
-import collections
-import itertools
 import os
 import time
 import csv
@@ -11,7 +9,7 @@ from parser_module import Parse
 from indexer import Indexer
 from smart_open import open
 from searcher import Searcher
-from utils import check_inverted_index
+from utils import check_inverted_index, check_lda, load_inverted_index
 
 
 def run_engine(corpus_path, output_path, stemming=False):
@@ -89,17 +87,16 @@ def main(corpus_path, output_path, stemming, queries, num_docs_to_retrieve=2000)
 
     if stemming:
         output_path = output_path + '\\WithStem'
-
     else:
         output_path = output_path + '\\WithoutStem'
 
     try:
-        if not os.path.isfile(output_path):
+        if not os.path.isdir(output_path):
             os.mkdir(output_path)
     except OSError:
         print("there is a problem with create folder of the stemming")
 
-    if not (check_inverted_index(output_path)):
+    if not (check_inverted_index(output_path) and check_lda(output_path)):
         run_engine(corpus_path, output_path, stemming)
 
     print("start query")
@@ -107,16 +104,18 @@ def main(corpus_path, output_path, stemming, queries, num_docs_to_retrieve=2000)
 
     pa = Parse(stemming)
     searcher = Searcher(pa, output_path)
+    searcher.inverted_idx = load_inverted_index()
     searcher.ranker.load_docs_and_terms()
-    write_result_to_csv(output_path)
+    write_result_to_csv()
     if isinstance(queries, list):
         j = 1
         for query in queries:
             i = 0
             tweetid_rank = []
-            print("the results for query: " + str(query) + ". are:")
+            # print("the results for query: " + str(query) + ". are:")
             for tweetId in search_and_rank_query(query, num_docs_to_retrieve, searcher):
-                print(str(i) + '. tweet id: ' + str(tweetId[0]))
+                # print(str(i) + '. tweet id: ' + str(tweetId[0]))
+                print('Tweet id: ' + str(tweetId[0]) + ' Score: ' + str(tweetId[1]))
                 tweetid_rank.append(tweetId)
                 i += 1
             add_result_to_csv(j, tweetid_rank)
@@ -131,9 +130,10 @@ def main(corpus_path, output_path, stemming, queries, num_docs_to_retrieve=2000)
                 if line == '\n' or line == '':
                     continue
                 # line = str(line[3:-2])
-                print(str(j) + ". the results for query: " + line + ". are:")
+                # print(str(j) + ". the results for query: " + line + ". are:")
                 for tweetId in search_and_rank_query(line, num_docs_to_retrieve, searcher):
-                    print(str(i) + '. tweet id: ' + str(tweetId[0]))
+                    # print(str(i) + '. tweet id: ' + str(tweetId[0]))
+                    print('Tweet id: ' + str(tweetId[0]) + ' Score: ' + str(tweetId[1]))
                     tweetid_rank.append(tweetId)
                     i += 1
                 add_result_to_csv(j, tweetid_rank)

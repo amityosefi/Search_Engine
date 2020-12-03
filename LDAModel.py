@@ -44,27 +44,16 @@ class LDA:
             self.docs[self.counter] = tweet_id
             self.counter += 1
             data = data + [list(dict[tweet_id][0])]
-        dictionary = Dictionary(data)
 
-        start = time.time()
-        global lda_model
+        dictionary = Dictionary(data)
         corpus = [dictionary.doc2bow(text) for text in data]
         data.clear()
 
-        #worker
-        start_worker = time.time()
-        mm = gensim.corpora.MmCorpus([dictionary.doc2bow(text) for text in data])
-        lda = gensim.models.ldamulticore.LdaMulticore(corpus=mm, id2word=dictionary, num_topics=15, workers=3)
-        end_worker = time.time() - start_worker
-        print("time takes with workers " + str(end_worker))
-
         start_without_worker = time.time()
+        global lda_model
         lda_model = LdaModel(corpus=corpus, num_topics=15, id2word=dictionary)
         end_without_worker = time.time() - start_without_worker
         print("time takes with workers " + str(end_without_worker))
-
-
-        # print("the time takes to build the lda model is: " + str(end) + "sec")
 
         try:
             for i, row in enumerate(lda_model[corpus]):

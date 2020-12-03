@@ -30,3 +30,7 @@ def load_inverted_index():
 
 def check_inverted_index(output_path):
     return os.path.isfile(output_path + '\\inverted_idx.pkl')
+
+
+def check_lda(output_path):
+    return os.path.isfile(output_path + '\\ldadictionary.pkl') and os.path.isfile(output_path + '\\ldamodelpickle.pkl') and os.path.isfile(output_path + '\\documents.pkl') and os.path.isfile(output_path + '\\searcher.pkl')

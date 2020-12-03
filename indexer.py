@@ -1,12 +1,11 @@
-from parser_module import Parse
 import pickle
 import os
-import math
+
 
 class Indexer:
 
     def __init__(self, output_path):
-        self.inverted_idx = {}  # key = term , value = count the documents that the term exist
+        #self.inverted_idx = {}  # key = term , value = count the documents that the term exist
         self.terms_idx = {}  # key = char , value = terms
         self.postingDict = {} # key = term, value = tf, idf
         self.config = output_path
@@ -15,8 +14,9 @@ class Indexer:
         self.documentsCounter = {} # key = numbers of docs, value = count posting files from each doc
         self.documents = {} # key = tweet id , value = term dict, max_tf, num of unique words
         self.numberToCharDict = {'0': 'a', '1': 'b', '2': 'c', '3': 'd', '4': 'e', '5': 'f', '6': 'g', '7': 'h', '8': 'i', '9': 'j'}
-        self.doc_counter = 0
+        #self.doc_counter = 0
         self.count = 0
+        self.inverted_idx = {}
 
     def add_new_doc(self, document):
         """
@@ -38,11 +38,11 @@ class Indexer:
         self.documents_idx[document_name].update(documentsTempDict)
         if document_name not in self.documentsCounter:
             self.documentsCounter[document_name] = 0
-        if len(self.documents_idx[document_name]) == 50000:
+        if len(self.documents_idx[document_name]) == 100000:
             self.uploadDocumnetToPostingFile(document_name)
             self.documentsCounter[document_name] += 1
 
-        self.doc_counter += 1
+        #self.doc_counter += 1
         #self.lda.addDoc(document)
 
         # Go over each term in the doc
@@ -52,9 +52,11 @@ class Indexer:
                 #     continue
 
                 if term not in self.inverted_idx:
-                    self.inverted_idx[term] = []
+                    self.inverted_idx[term] = 1
+                else:
+                    self.inverted_idx[term] += 1
 
-                self.inverted_idx[term].append(document.tweet_id)
+                #self.inverted_idx[term].append(document.tweet_id)
 
                 posting_name = self.find_posting_name(term)
 
@@ -78,7 +80,7 @@ class Indexer:
                 if posting_name not in self.postingcounter:
                     self.postingcounter[posting_name] = 0
 
-                if len(self.terms_idx[posting_name]) == 500000:
+                if len(self.terms_idx[posting_name]) == 200000:
                     #sorted_term_lst = sorted(self.terms_idx[posting_name])
                     term_lst = list(dict.fromkeys(self.terms_idx[posting_name]))  # remove duplicates
                     self.terms_idx[posting_name] = []
@@ -150,119 +152,84 @@ class Indexer:
 
     def merge_posting_files(self):
 
-        self.add_the_rest_terms()
-        #self.add_the_rest_documents()
-
-        num_of_documents = self.doc_counter
-
-        common_terms = self.find_common_terms()
-        common_terms_dict = {}
-        common_count = 0
 
         self.uploadDocumentsFromPosting()
+        num_of_documents = len(self.documents)
 
         merged_dict = {}
 
         for posting_name in self.postingcounter:
-            objects = {}
+            posting_name_dict = {}
+            new_posting_name_dict = {}
             posting_lst = self.find_posting_files(posting_name)
-            #if len(posting_lst) == 1:
-             #   continue
+            len_of_posting_list = len(posting_lst)
+            i = 0
+            while (i < len_of_posting_list):
 
-            for file in posting_lst:
-                with (open(file, "rb")) as openfile:
-                    while True:
-                        try:
-                            posting_name_dict = pickle.load(openfile)
-                        except EOFError:
-                            break
-                try:
-                    os.remove(file)
-                except:
-                    print("no such a file of name" + str(posting_name))
-
-                new_posting_name_dict = {}
-
-                # if "COVID" in posting_name_dict:
-                #     print(posting_name_dict["COVID"])
-                # if "covid" in posting_name_dict:
-                #     print(posting_name_dict["covid"])
+                if self.terms_idx[posting_name] != []:
+                    term_lst = list(dict.fromkeys(self.terms_idx[posting_name]))
+                    for term in term_lst:
+                        posting_name_dict[term] = self.postingDict[term]
+                        self.postingDict.pop(term)
+                    self.terms_idx[posting_name] = []
+                else:
+                    with (open(posting_lst[i], "rb")) as openfile:
+                        while True:
+                            try:
+                                posting_name_dict = pickle.load(openfile)
+                            except EOFError:
+                                break
+                    try:
+                        os.remove(posting_lst[i])
+                    except:
+                        print("no such a file of name" + str(posting_name))
+                    i += 1
 
                 for term in posting_name_dict:
 
+                    # if term in merged_dict:
+                    #     continue
+
                     lower_term = str(term).lower()
-                    if (term != lower_term) and (lower_term in Parse.corpus_dict):
-                        if lower_term not in self.inverted_idx:
-                            self.inverted_idx[lower_term] = []
+                    if (term != lower_term) and (lower_term in self.inverted_idx):
                         if lower_term not in new_posting_name_dict:
                             new_posting_name_dict[lower_term] = {}
                         if lower_term in posting_name_dict:
                              new_posting_name_dict[lower_term].update(posting_name_dict[lower_term])
-                        # print(new_posting_name_dict[lower_term])
 
-                        for doc_id in self.inverted_idx[term]:
-                            # if doc_id == "1288844267688022016":
-                            #     print("vfdfdv")
+                        for doc_id in posting_name_dict[term]:
                             val = self.documents[doc_id][0][term]
                             # print(self.documents[doc_id][0])
                             if lower_term in self.documents[doc_id][0]:
                                 self.documents[doc_id][0][lower_term] += val
                             else:
                                 self.documents[doc_id][0][lower_term] = val
+                                self.inverted_idx[lower_term] += 1
                             self.documents[doc_id][0].pop(term)
-
-                            # print(self.documents[doc_id][0])
-                            # print(new_posting_name_dict[lower_term])
 
                             new_val = self.documents[doc_id][0][lower_term]
                             current_max_tf = self.documents[doc_id][1]
                             if current_max_tf < new_val:
                                 self.documents[doc_id][1] = new_val
 
-                            # if not flag:
-                            # if lower_term in new_posting_name_dict:
-                            #     print(new_posting_name_dict[lower_term])
                             new_tf = float(new_val/(self.documents[doc_id][1]))
                             new_posting_name_dict[lower_term][doc_id] = "%.3f" % new_tf
 
-                            # print(new_posting_name_dict[lower_term])
+                        if term in self.inverted_idx:
+                            self.inverted_idx.pop(term)
+                        term = lower_term
 
-                            # print(posting_name_dict[lower_term])
-
-                            if doc_id not in self.inverted_idx[lower_term]:
-                                self.inverted_idx[lower_term].append(doc_id)
-
-                        self.inverted_idx.pop(term)
 
                     elif term not in new_posting_name_dict:
                             new_posting_name_dict[term] = posting_name_dict[term]
 
-                #posting_name_dict.clear()
-                #posting_name_dict = new_posting_name_dict
-                #print(new_posting_name_dict)
+                    documents_posting_name_dict = new_posting_name_dict[term]
+                    documents_posting_name_dict['idf'] = "%.3f" % (num_of_documents / self.inverted_idx[term])  # idf
+                    if term not in merged_dict:
+                        merged_dict[term] = {}
+                    merged_dict[term].update(documents_posting_name_dict)
 
-                # if "covid" in new_posting_name_dict:
-                #     print(new_posting_name_dict["covid"])
-
-            for term in new_posting_name_dict:
-
-                documents_posting_name_dict = new_posting_name_dict[term]
-                # documents_posting_name_dict['idf'] = "%.3f" % (math.log2(num_of_documents / len(self.inverted_idx[term])))  # idf
-                documents_posting_name_dict['idf'] = "%.3f" % (num_of_documents / len(self.inverted_idx[term]))  # idf
-                num_docs_of_the_term = len(self.inverted_idx[term])
-                self.inverted_idx[term] = num_docs_of_the_term
-                if term in common_terms:
-                    common_terms_dict[term] = documents_posting_name_dict
-                else:
-                    merged_dict[term] = documents_posting_name_dict
-                # if term in common_terms:
-                #     if term not in common_terms_dict:
-                #         common_terms_dict[term] = {}
-                #     common_terms_dict[term].update(documents_posting_name_dict)
-                # elif term not in common_terms:
-                #     if term not in merged_dict:
-                #         merged_dict[term] = {}
-                #     merged_dict[term].update(documents_posting_name_dict)
+                new_posting_name_dict.clear()
 
             new_posting_name_dict.clear()
             merged_file = open(self.config + '\\' + posting_name + '.pkl', "wb")
@@ -270,31 +237,20 @@ class Indexer:
             merged_file.close()
             merged_dict.clear()
 
-            common_terms_file = open(self.config + '\\' + 'common' + str(common_count) + '.pkl', "wb")
-            pickle.dump(common_terms_dict, common_terms_file)
-            common_terms_file.close()
-            common_terms_dict.clear()
-            common_count += 1
-
         self.postingcounter.clear()
-
-        # common_terms_file = open(self.config + '\\' + 'common.pkl', "wb")
-        # pickle.dump(common_terms_dict, common_terms_file)
-        # common_terms_file.close()
-        # common_terms_dict.clear()
 
         docs_file = open(self.config + '\\documents.pkl', "wb")
         pickle.dump(self.documents, docs_file)
         docs_file.close()
         self.documents.clear()
 
+        docs_file = open(self.config + '\\inverted_idx.pkl', "wb")
+        pickle.dump(self.inverted_idx, docs_file)
+
+        self.inverted_idx.clear()
         #self.postingcounter.clear()
 
-        self.mergeCommonFiles(common_count)
-        docs_file = open(self.config + '\\inverted_idx.pkl', "wb")
-        pickle.dump(self.documents, docs_file)
-        self.inverted_idx.clear()
-
+        # self.mergeCommonFiles(common_count)
 
     def mergeCommonFiles(self, common_coumnt):
 
@@ -324,7 +280,7 @@ class Indexer:
 
     def find_posting_files(self, posting_name):
             posting_lst = []
-            num_of_posting = self.postingcounter[posting_name] + 1
+            num_of_posting = self.postingcounter[posting_name]
             for i in range(num_of_posting):
                 file_path = self.config + '\\' + posting_name + str(i) + '.pkl'
                 posting_lst.append(file_path)
