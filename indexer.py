@@ -7,7 +7,8 @@ import os
 
 class Indexer:
 
-    def __init__(self, output_path):
+    def __init__(self, output_path,stem):
+        self.stem = stem
         # self.inverted_idx = {}  # key = term , value = count the documents that the term exist
         self.terms_idx = {}  # key = char , value = terms
         self.postingDict = {}  # key = term, value = tf, idf
@@ -52,7 +53,7 @@ class Indexer:
 
         document_dictionary = document.term_doc_dictionary
         documentsTempDict = {}
-        documentsTempDict[document.tweet_id] = [document_dictionary, document.max_tf, document.num_of_unique_words]
+        documentsTempDict[document.tweet_id] = [document_dictionary, document.max_tf]
         document_name = document.tweet_id[len(document.tweet_id) - 1]
         if document_name not in self.documents_idx:
             self.documents_idx[document_name] = {}
@@ -251,8 +252,12 @@ class Indexer:
 
         self.postingcounter.clear()
 
-        docs_file = open(self.config + '\\inverted_idx.pkl', "wb")
-        pickle.dump(self.inverted_idx, docs_file)
+        if self.stem:
+            docs_file = open('inverted_idxwithstem.pkl', "wb")
+            pickle.dump(self.inverted_idx, docs_file)
+        else:
+            docs_file = open('inverted_idxwithoutstem.pkl', "wb")
+            pickle.dump(self.inverted_idx, docs_file)
         self.inverted_idx.clear()
 
         lst = []

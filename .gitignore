@@ -1,1 +1,8 @@
 posting.pkl
+inverted_idx.pkl
+ldadictionarywithoutstem.pkl
+ldamodelwithoutstem.pkl
+ldasearcherwithoutstem.pkl
+ldadictionarywithstem.pkl
+ldamodelwithstem.pkl
+ldasearcherwithstem.pkl

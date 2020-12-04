@@ -26,11 +26,11 @@ lda_model = None
 
 class LDA:
 
-    def __init__(self, path, docs):
+    def __init__(self, path, docs, stem):
         self.path = path
         self.docs = docs  # key=counter , value=tweetid
         self.topic_dict = {}  # key=number topic , value = [[tweetif,prob],...]
-        self.counter = 0
+        self.stem = stem
         self.counter2 = 0
 
     def build_ldaModel(self):
@@ -67,21 +67,28 @@ class LDA:
         except:
             print('problem with the lda model')
 
-        with open(self.path + '\\ldamodelpickle.pkl', 'wb') as f:
-            pickle.dump(lda_model, f)
+        if self.stem:
+            with open('ldamodelwithstem.pkl', 'wb') as f:
+                pickle.dump(lda_model, f)
 
-        lda_model.save(self.path + '\\ldamodeldatapath.pkl')
+            with open('ldadictionarywithstem.pkl', 'wb') as f:
+                pickle.dump(dictionary, f)
+
+            with open('ldasearcherwithstem.pkl', 'wb') as f:
+                pickle.dump(self.topic_dict, f)
+
+        else:
+            with open('ldamodelwithoutstem.pkl', 'wb') as f:
+                pickle.dump(lda_model, f)
+
+            with open('ldadictionarywithoutstem.pkl', 'wb') as f:
+                pickle.dump(dictionary, f)
+
+            with open('ldasearcherwithoutstem.pkl', 'wb') as f:
+                pickle.dump(self.topic_dict, f)
 
         lda_model = None
-
-        with open(self.path + '\\ldadictionary.pkl', 'wb') as f:
-            pickle.dump(dictionary, f)
-
-        with open(self.path + '\\searcher.pkl', 'wb') as f:
-            pickle.dump(self.topic_dict, f)
         self.topic_dict.clear()
-
-
 
         # if self.counter % 100000 != 0:  # counter != 100,000
         #     self.hundranddocs.append(document.text_tokens)

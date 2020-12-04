@@ -10,7 +10,7 @@ import gensim.corpora.dictionary
 
 class Searcher:
 
-    def __init__(self, parser, output_path):
+    def __init__(self, parser, output_path, stem):
         """
         :param inverted_index: dictionary of inverted index
         """
@@ -18,15 +18,25 @@ class Searcher:
         self.ranker = Ranker(output_path)
         self.path = output_path
         self.counter = 1
-        self.inverted_idx = utils.load_inverted_index(output_path)
-        with open(self.path + '\\ldamodelpickle.pkl', 'rb') as handle:
-            self.lda_model = pickle.load(handle)
+        self.stem = stem
+        if stem:
+            with open('ldamodelwithstem.pkl', 'rb') as handle:
+                self.lda_model = pickle.load(handle)
 
-        with open(self.path + '\\ldadictionary.pkl', 'rb') as handle:
-            self.dictionary = pickle.load(handle)
+            with open('ldadictionarywithstem.pkl', 'rb') as handle:
+                self.dictionary = pickle.load(handle)
 
-        with open(self.path + '\\searcher.pkl', 'rb') as handle:
-            self.dict = pickle.load(handle)
+            with open('ldasearcherwithstem.pkl', 'rb') as handle:
+                self.dict = pickle.load(handle)
+        else:
+            with open('ldamodelwithoutstem.pkl', 'rb') as handle:
+                self.lda_model = pickle.load(handle)
+
+            with open('ldadictionarywithoutstem.pkl', 'rb') as handle:
+                self.dictionary = pickle.load(handle)
+
+            with open('ldasearcherwithoutstem.pkl', 'rb') as handle:
+                self.dict = pickle.load(handle)
 
         with open(self.path + '\\documents.pkl', 'rb') as handle:
             self.documents = pickle.load(handle)

@@ -9,7 +9,7 @@ from parser_module import Parse
 from indexer import Indexer
 from smart_open import open
 from searcher import Searcher
-from utils import check_inverted_index, check_lda, load_inverted_index
+from utils import check_inverted_index, load_inverted_index, check_ldaWithStem
 
 
 def run_engine(corpus_path, output_path, stemming=False):
@@ -25,7 +25,7 @@ def run_engine(corpus_path, output_path, stemming=False):
     ConfigClass(corpus_path, output_path, stemming)
     r = ReadFile(corpus_path)
     p = Parse(stemming)
-    indexer = Indexer(output_path)
+    indexer = Indexer(output_path, stemming)
 
     if corpus_path.endswith('parquet'):
         documents_list = r.read_file(corpus_path)
@@ -50,7 +50,7 @@ def run_engine(corpus_path, output_path, stemming=False):
     indexer.merge_posting_files()
     e = time.time() - s
     print("merge time: " + str(e) + " secs.")
-    lda = LDA(output_path, indexer.dictdoc)
+    lda = LDA(output_path, indexer.dictdoc, stemming)
     lda.build_ldaModel()
 
     x = str(indexer.numOfDucuments)
@@ -81,24 +81,22 @@ def main(corpus_path, output_path, stemming, queries, num_docs_to_retrieve=2000)
 
     if stemming:
         output_path = output_path + '\\WithStem'
+
     else:
         output_path = output_path + '\\WithoutStem'
 
-    try:
         if not os.path.isdir(output_path):
             os.mkdir(output_path)
-    except OSError:
-        print("there is a problem with create folder of the stemming")
 
-    if not (check_inverted_index(output_path) and check_lda(output_path)):
-        run_engine(corpus_path, output_path, stemming)
+
+    # if not (check_inverted_index() and check_ldaWithStem(output_path)):
+    run_engine(corpus_path, output_path, stemming)
 
     print("start query")
     # lda = 5
 
     pa = Parse(stemming)
-    searcher = Searcher(pa, output_path)
-    searcher.inverted_idx = load_inverted_index(output_path)
+    searcher = Searcher(pa, output_path, stemming)
     searcher.ranker.load_docs_and_terms()
     write_result_to_csv()
     if isinstance(queries, list):
