@@ -46,7 +46,7 @@ def run_engine(corpus_path, output_path, stemming=False):
     indexer.merge_posting_files()
     e = time.time() - s
     print("merge time: " + str(e) + " secs.")
-    lda = LDA(output_path)
+    lda = LDA(output_path, indexer.dictdoc)
     lda.build_ldaModel()
 
     x = str(indexer.count)
@@ -56,6 +56,7 @@ def run_engine(corpus_path, output_path, stemming=False):
 
 
 def parseAndIndexDocuments(documents_list, p, indexer):
+    documents_list = documents_list[:100000]
     for idx, document in enumerate(documents_list):
         # parse the document
         parsed_document = p.parse_doc(document)
@@ -73,17 +74,6 @@ def search_and_rank_query(query, num_docs_to_retrieve, searcher):
 
 
 def main(corpus_path, output_path, stemming, queries, num_docs_to_retrieve=2000):
-    # dict1 = {'x': [[1, 2]], 'y': [[4]]}
-    # dict2 = {'a': [[3]], 'b': [[4]], 'x': [[3]], 'c': [[4]], 'd': [[66]]}
-    # dict3 = {'x': [[1, 7]], 'y': [[4]]}
-    # dictsize = 3
-    # for i in range(dictsize):
-    #     x = 9
-    #
-    # Cdict = collections.defaultdict(list)
-    # for key, val in itertools.chain(dict1.items(), dict2.items(), dict3.items()):
-    #     Cdict[key] += val
-    # print(dict(Cdict))
 
     if stemming:
         output_path = output_path + '\\WithStem'
@@ -104,7 +94,7 @@ def main(corpus_path, output_path, stemming, queries, num_docs_to_retrieve=2000)
 
     pa = Parse(stemming)
     searcher = Searcher(pa, output_path)
-    searcher.inverted_idx = load_inverted_index()
+    searcher.inverted_idx = load_inverted_index(output_path)
     searcher.ranker.load_docs_and_terms()
     write_result_to_csv()
     if isinstance(queries, list):

@@ -16,11 +16,9 @@ logging.root.addHandler(handler)
 
 import pickle
 import time
-import itertools
 
 from gensim.corpora import Dictionary
 from gensim.models import LdaModel
-from gensim.test.utils import datapath
 from smart_open import open
 
 lda_model = None
@@ -28,22 +26,18 @@ lda_model = None
 
 class LDA:
 
-    def __init__(self, path):
+    def __init__(self, path, docs):
         self.path = path
-        self.docs = {}  # key=counter , value=tweetid
+        self.docs = docs  # key=counter , value=tweetid
         self.topic_dict = {}  # key=number topic , value = [[tweetif,prob],...]
         self.counter = 0
         self.counter2 = 0
 
     def build_ldaModel(self):
-        print("start build the model1")
-        data = []
-        with open(self.path + '\\documents' + '.pkl', 'rb') as handle:
-            dict = pickle.load(handle)
-        for tweet_id in dict:
-            self.docs[self.counter] = tweet_id
-            self.counter += 1
-            data = data + [list(dict[tweet_id][0])]
+        print("start build the model")
+
+        with open(self.path + '\\data' + '.pkl', 'rb') as handle:
+            data = pickle.load(handle)
 
         dictionary = Dictionary(data)
         corpus = [dictionary.doc2bow(text) for text in data]
@@ -53,7 +47,7 @@ class LDA:
         global lda_model
         lda_model = LdaModel(corpus=corpus, num_topics=15, id2word=dictionary)
         end_without_worker = time.time() - start_without_worker
-        print("time takes with workers " + str(end_without_worker))
+        print("time takes to build the lda-model " + str(end_without_worker))
 
         try:
             for i, row in enumerate(lda_model[corpus]):
@@ -71,7 +65,7 @@ class LDA:
                     # print(self.counter2)
                     self.counter2 += 1
         except:
-            print('problem with the lda model')
+            print('problem with the lda modellllllllllllllllllllllllllllllllllllllllllllllllllll')
 
         with open(self.path + '\\ldamodelpickle.pkl', 'wb') as f:
             pickle.dump(lda_model, f)

@@ -5,7 +5,6 @@ from stemmer import Stemmer
 
 
 class Parse:
-    corpus_dict = {}
 
     def __init__(self, stem):
         self.stop_words = stopwords.words('english')
@@ -248,9 +247,6 @@ class Parse:
             else:
                 self.term_dict[term] += 1
 
-            if term not in self.corpus_dict:
-                self.corpus_dict[term] = 1
-
         num_of_uniqe_terms = len(self.term_dict)
 
         max_tf = 0
@@ -275,7 +271,7 @@ class Parse:
         #print(full_text)
         #print(self.term_dict)
 
-        # if (tweet_id=='1288851692201672706' or tweet_id=='1288835274815021056' or tweet_id=='1288834518711926786' or tweet_id=='1288827499439435776' ):
+        # if (tweet_id=='1288847567103635457' or tweet_id=='1288852809438437377' or tweet_id=='1288851580922535937' ):
         #     print("--------------------------------------------")
         #     print(full_text)
 

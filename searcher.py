@@ -18,7 +18,18 @@ class Searcher:
         self.ranker = Ranker(output_path)
         self.path = output_path
         self.counter = 1
-        self.inverted_idx = {}
+        self.inverted_idx = utils.load_inverted_index(output_path)
+        with open(self.path + '\\ldamodelpickle.pkl', 'rb') as handle:
+            self.lda_model = pickle.load(handle)
+
+        with open(self.path + '\\ldadictionary.pkl', 'rb') as handle:
+            self.dictionary = pickle.load(handle)
+
+        with open(self.path + '\\searcher.pkl', 'rb') as handle:
+            self.dict = pickle.load(handle)
+
+        with open(self.path + '\\documents.pkl', 'rb') as handle:
+            self.documents = pickle.load(handle)
 
     def relevant_docs_from_posting(self, query):
         """
@@ -31,25 +42,22 @@ class Searcher:
         query_tokens = self.parser.parse_sentence(query)
         new_query_tokens = []
         for token in query_tokens:
-            token = str(token)
+            if not (token[0] == '@' or token[0] == '#' or token[0] == '%' or token[0] == '$' or '0' <= token[0] <= '9'):
+                token = token.lower()
             if token == token.lower():
                 new_query_tokens.append(token)
-            elif token.lower() in inverted_idx:
+            elif token.lower() in self.inverted_idx:
                 new_query_tokens.append(token.lower())
             else:
                 new_query_tokens.append(token)
 
-        with open(self.path + '\\ldamodelpickle.pkl', 'rb') as handle:
-            lda_model = pickle.load(handle)
 
-        with open(self.path + '\\.pkl', 'rb') as handle:
-            dictionary = pickle.load(handle)
 
         # lda_model = LDAModel.lda_model
         query_tokens = new_query_tokens
         dictquery = {new_query_tokens[i]: 0 for i in range(0, len(new_query_tokens))}
-        new_bow = dictionary.doc2bow(query_tokens)
-        topic_vector = lda_model.get_document_topics(bow=new_bow)
+        new_bow = self.dictionary.doc2bow(query_tokens)
+        topic_vector = self.lda_model.get_document_topics(bow=new_bow)
 
         mx = 0
         if len(topic_vector) > 1:
@@ -62,16 +70,11 @@ class Searcher:
         # print(topic_vector)
         # topic_vector = self.lda.lda_model[self.bow_corpus[self.lda.counter]]
 
-        with open(self.path + '\\searcher.pkl', 'rb') as handle:
-            dict = pickle.load(handle)
-
-        with open(self.path + '\\documents.pkl', 'rb') as handle:
-            documents = pickle.load(handle)
 
         for topicID, prob in topic_vector:
             if prob > 0.75 or prob >= mx:
-                for doc in dict[topicID]:
-                    for term in documents[doc[0]][0]:
+                for doc in self.dict[topicID]:
+                    for term in self.documents[doc[0]][0]:
                         if term in dictquery:
                             relevant_docs.append(doc[0])
                             break
