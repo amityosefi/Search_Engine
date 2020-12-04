@@ -67,7 +67,7 @@ class Ranker:
         for document in relevant_doc:
             sum_weights = 0
             num_of_same_tokens = 0
-            total_squerded_weights = 0
+            total_squerded_weights = 0 #asf
             doc_terms_dict = self.documents[document][0]
             for term in doc_terms_dict:
                 if not (term[0] == '@' or term[0] == '#' or term[0] == '%' or term[0] == '$' or '0' <= term[0] <= '9'):
