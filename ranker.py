@@ -12,11 +12,8 @@ class Ranker:
     def load_docs_and_terms(self):
 
         with (open(self.output_path + '\\documents.pkl', "rb")) as openfile:
-            while True:
-                try:
-                    self.documents = pickle.load(openfile)
-                except EOFError:
-                    break
+            self.documents = pickle.load(openfile)
+
 
         # with (open(self.output_path + '\\common.pkl', "rb")) as openfile:
         #     while True:
@@ -60,7 +57,6 @@ class Ranker:
         """
 
         query_tokens_dict = {query_tokens[i]: 0 for i in range(0, len(query_tokens))}
-
         cosSimilarity_list = []
         #num_of_query_tokens = len(query_tokens_dict)
 
@@ -70,11 +66,14 @@ class Ranker:
             total_squerded_weights = 0 #asf
             doc_terms_dict = self.documents[document][0]
             for term in doc_terms_dict:
-                if not (term[0] == '@' or term[0] == '#' or term[0] == '%' or term[0] == '$' or '0' <= term[0] <= '9'):
+                if not ('@' in term or '#' in term or '$' in term or '%' in term):
                     term = term.lower()
                 if term in self.terms_dict:
-                    term_weight = (float(self.terms_dict[term][document]) * float(self.terms_dict[term]['idf']))
-                    squared_weights = pow(2, term_weight)
+                    xx = float(self.terms_dict[term][document])
+                    yy = float(self.terms_dict[term]['idf'])
+                    term_weight = xx * yy
+
+                    squared_weights = term_weight**2
                 else:
                     posting_name = self.find_posting_name(term)
                     with (open(self.output_path + '\\' + posting_name + '.pkl', "rb")) as openfile:
@@ -83,8 +82,11 @@ class Ranker:
                                 additional_terms_dict = pickle.load(openfile)
                             except EOFError:
                                 break
-                    term_weight = float(additional_terms_dict[term][document]) * float(additional_terms_dict[term]['idf'])
-                    squared_weights = pow(2, term_weight)
+
+                    zz = float(additional_terms_dict[term][document])
+                    ee = float(additional_terms_dict[term]['idf'])
+                    term_weight = zz * ee
+                    squared_weights = term_weight**2
                     self.terms_dict.update(additional_terms_dict)
                 if term in query_tokens_dict:
                     sum_weights += term_weight # *1 of query

@@ -45,7 +45,7 @@ class LDA:
 
         start_without_worker = time.time()
         global lda_model
-        lda_model = LdaModel(corpus=corpus, num_topics=15, id2word=dictionary)
+        lda_model = LdaModel(corpus=corpus, num_topics=20, id2word=dictionary)
         end_without_worker = time.time() - start_without_worker
         print("time takes to build the lda-model " + str(end_without_worker))
 
@@ -54,10 +54,10 @@ class LDA:
                 row = sorted(row, key=lambda x: (x[1]), reverse=True)
                 # Get the Dominant topic, Perc Contribution and Keywords for each document
                 for j, (topic_num, prop_topic) in enumerate(row):
-                    if j != 0:
+                    if j >= 3:
                         break
                     # => dominant topic
-                    if prop_topic > 0.865:
+                    if prop_topic > 0.6:
                         if topic_num in self.topic_dict:
                             self.topic_dict[topic_num].append([self.docs[self.counter2], prop_topic])
                         else:
@@ -65,7 +65,7 @@ class LDA:
                     # print(self.counter2)
                     self.counter2 += 1
         except:
-            print('problem with the lda modellllllllllllllllllllllllllllllllllllllllllllllllllll')
+            print('problem with the lda model')
 
         with open(self.path + '\\ldamodelpickle.pkl', 'wb') as f:
             pickle.dump(lda_model, f)

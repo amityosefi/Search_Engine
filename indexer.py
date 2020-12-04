@@ -1,5 +1,6 @@
 import collections
 import itertools
+import math
 import pickle
 import os
 
@@ -15,12 +16,10 @@ class Indexer:
         self.documents_idx = {}  # key = last digit of each tweet id, key = dict of documents with the same digit
         self.documentsCounter = {}  # key = numbers of docs, value = count posting files from each doc
         self.documents = {}  # key = tweet id , value = term dict, max_tf, num of unique words
-        # self.doc_counter = 0
-        self.count = 0
+        self.numberToCharDict = {'0': 'a', '1': 'b', '2': 'c', '3': 'd', '4': 'e', '5': 'f', '6': 'g', '7': 'h', '8': 'i', '9': 'j'}
+        self.numOfDucuments = 0
         self.inverted_idx = {}
         self.adddoc = []
-        self.counterdoc = 0
-        self.counter = 0
         self.dictdoc = {}
         self.datacounter = 0
 
@@ -32,27 +31,24 @@ class Indexer:
         :return: -
         """
 
-        print(self.count)
-        self.count += 1
+        print(self.numOfDucuments)
         doc_tokens = []
         for item in document.text_tokens:
-            if not (item[0] == '@' or item[0] == '#' or item[0] == '%' or item[0] == '$' or '0' <= item[0] <= '9'):
+            if not ('@' in item or '#' in item or '$' in item or '%' in item):
                 item = item.lower()
             doc_tokens.append(item)
 
-        if self.count % 10000 == 0 and self.count != 0:
+        if self.numOfDucuments % 50000 == 0 and self.numOfDucuments != 0:
             self.adddoc.append(doc_tokens)
-            self.dictdoc[self.counterdoc] = document.tweet_id
+            self.dictdoc[self.numOfDucuments] = document.tweet_id
 
             with open(self.config + '\\data' + str(self.datacounter) + '.pkl', 'wb') as f:
                 pickle.dump(self.adddoc, f)
                 self.adddoc.clear()
-            self.counterdoc += 1
             self.datacounter += 1
         else:
             self.adddoc.append(doc_tokens)
-            self.dictdoc[self.counterdoc] = document.tweet_id
-            self.counterdoc += 1
+            self.dictdoc[self.numOfDucuments] = document.tweet_id
 
         document_dictionary = document.term_doc_dictionary
         documentsTempDict = {}
@@ -63,12 +59,11 @@ class Indexer:
         self.documents_idx[document_name].update(documentsTempDict)
         if document_name not in self.documentsCounter:
             self.documentsCounter[document_name] = 0
-        if len(self.documents_idx[document_name]) == 100000:
+        if len(self.documents_idx[document_name]) == 50000:
             self.uploadDocumnetToPostingFile(document_name)
             self.documentsCounter[document_name] += 1
 
-        # self.doc_counter += 1
-        # self.lda.addDoc(document)
+        self.numOfDucuments += 1
 
         # Go over each term in the doc
         for term in document_dictionary:
@@ -77,26 +72,23 @@ class Indexer:
                 #     continue
                 origin_term = term
 
-                if (term[0] == '@' or term[0] == '#' or term[0] == '$' or term[0] == '%' or '0' <= term[0] <= '9'):
+                if ('@' in term or '#' in term or '$' in term or '%' in term):
                     if term not in self.inverted_idx:
-                        self.inverted_idx[term] = [1, 0, 0]  # [0]:count documents of the term   [1]:idf
+                        self.inverted_idx[term] = [1, term]  # [0]:count documents of the term   [1]:idf
                     else:
                         self.inverted_idx[term][0] += 1  # ther key already in the dict
-
                 else:
                     if term.lower() not in self.inverted_idx:
                         if term[0] == term[0].lower():
-                            self.inverted_idx[term.lower()] = [1, 0,term.lower()]  # [0]:count documents of the term   [1]:idf
+                            self.inverted_idx[term.lower()] = [1, term.lower()]  # [0]:count documents of the term   [1]:idf
                         else:
-                            self.inverted_idx[term.lower()] = [1, 0, term.Upper()]
+                            self.inverted_idx[term.lower()] = [1, term.upper()]
                     elif term[0] == term[0].lower():
-                        self.inverted_idx[term.lower()][2] = term.lower()
+                        self.inverted_idx[term.lower()][1] = term.lower()
                         self.inverted_idx[term.lower()][0] += 1  # ther key already in the dict
                     else:
                         self.inverted_idx[term.lower()][0] += 1
                     term = term.lower()
-
-
 
                 posting_name = self.find_posting_name(term)
 
@@ -109,7 +101,7 @@ class Indexer:
                     self.postingDict[term] = {}
 
                 if document.doc_length > 0:
-                    self.postingDict[term][document.tweet_id] = "%.3f" % float(
+                    self.postingDict[term][document.tweet_id] = "%.5f" % float(
                         document_dictionary[origin_term] / document.max_tf)  # tf
                 else:
                     self.postingDict[term][document.tweet_id] = 0.9  # tf
@@ -128,22 +120,27 @@ class Indexer:
             except:
                 print('problem with the following key {}'.format(term))
 
-    def findFirstChar(self, term):
+    def findAtChar(self, term):
 
-        firstChar = term[0].lower()
-        i = 0
-        while not ('a' <= firstChar <= 'z'):
-            """
-            if i == len(term) - 1:
-                if not ('a' <= posting_name <= 'z' or 'A' <= posting_name <= 'Z' or '0' <= posting_name <= '9' or posting_name == '$'):
-                    flag = True
-                    break
-            """
+        term = str(term)
 
-            i += 1
-            firstChar = str(term[i]).lower()
+        if '$' in term or '%' in term:
+            posting_name = 'delimiters'
+        else:
+            posting_name = term[0].lower()
+            i = 0
+            while not ('a' <= posting_name <= 'z' or '0' <= posting_name <= '9' or posting_name == '$'):
+                """
+                if i == len(term) - 1:
+                    if not ('a' <= posting_name <= 'z' or 'A' <= posting_name <= 'Z' or '0' <= posting_name <= '9' or posting_name == '$'):
+                        flag = True
+                        break
+                """
 
-        return firstChar
+                i += 1
+                posting_name = str(term[i]).lower()
+
+        return posting_name
 
     def find_posting_name(self, term):
 
@@ -204,9 +201,7 @@ class Indexer:
 
     def merge_posting_files(self):
 
-        num_of_documents = len(self.documents_idx)
         self.mergeDocumentsFromPosting()
-
         merged_dict = {}
 
         for posting_name in self.postingcounter:
@@ -246,7 +241,7 @@ class Indexer:
 
             for term in merged_dict:
                 documents_posting_name_dict = merged_dict[term]
-                documents_posting_name_dict['idf'] = "%.3f" % (num_of_documents / self.inverted_idx[term][0])  # idf
+                documents_posting_name_dict['idf'] = "%.3f" % math.log((self.numOfDucuments / self.inverted_idx[term][0]), 2)  # idf
                 merged_dict[term] = documents_posting_name_dict
 
             merged_file = open(self.config + '\\' + posting_name + '.pkl', "wb")

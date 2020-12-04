@@ -41,22 +41,26 @@ def run_engine(corpus_path, output_path, stemming=False):
 
     documents_list.clear()
 
-    print("start merge files")
+
+
+    ee = time.time()-start
+    print("the time to end parser and indexer: " + str(ee))
     s = time.time()
+    print("start merge files")
     indexer.merge_posting_files()
     e = time.time() - s
     print("merge time: " + str(e) + " secs.")
     lda = LDA(output_path, indexer.dictdoc)
     lda.build_ldaModel()
 
-    x = str(indexer.count)
+    x = str(indexer.numOfDucuments)
     en = time.time() - start
     print("the time takes the hole reader parser and indexer after merge files "
           "and building the model for " + x + " documents are: " + str(en) + " sec")
 
 
 def parseAndIndexDocuments(documents_list, p, indexer):
-    documents_list = documents_list[:100000]
+    # documents_list = documents_list[:100000]
     for idx, document in enumerate(documents_list):
         # parse the document
         parsed_document = p.parse_doc(document)
@@ -111,7 +115,7 @@ def main(corpus_path, output_path, stemming, queries, num_docs_to_retrieve=2000)
             add_result_to_csv(j, tweetid_rank)
             j += 1
     else:
-        try:
+        # try:
             file = open(queries, encoding="utf8")
             j = 1
             for line in file:
@@ -119,18 +123,18 @@ def main(corpus_path, output_path, stemming, queries, num_docs_to_retrieve=2000)
                 tweetid_rank = []
                 if line == '\n' or line == '':
                     continue
-                # line = str(line[3:-2])
-                # print(str(j) + ". the results for query: " + line + ". are:")
+                line = str(line[3:-2])
+                print(str(j) + ". the results for query: " + line + ". are:")
                 for tweetId in search_and_rank_query(line, num_docs_to_retrieve, searcher):
-                    # print(str(i) + '. tweet id: ' + str(tweetId[0]))
-                    print('Tweet id: ' + str(tweetId[0]) + ' Score: ' + str(tweetId[1]))
+                    print(str(i) + '. Tweet id: ' + str(tweetId[0]) + ' Score: ' + str(tweetId[1]))
+                    # print('Tweet id: ' + str(tweetId[0]) + ' Score: ' + str(tweetId[1]))
                     tweetid_rank.append(tweetId)
                     i += 1
                 add_result_to_csv(j, tweetid_rank)
                 j += 1
             file.close()
-        except:
-            print("not working")
+        # except:
+        #     print("not working")
 
 
 def write_result_to_csv():

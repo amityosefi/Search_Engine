@@ -13,8 +13,8 @@ class Parse:
          'itself', 'other', 'off', 'is', 's', 'am', 'or', 'who', 'as', 'from', 'him', 'each', 'the', 'themselves',
          'until', 'below', 'are', 'we', 'these', 'your', 'his', 'through', 'don', 'nor', 'me', 'were', 'her', 'more',
          'himself', 'this', 'down', 'should', 'our', 'their', 'while', 'above', 'both', 'up', 'to', 'ours', 'had', 'she',
-         'all', 'no', 'when', 'at', 'any', 'before', 'them', 'same', 'and', 'been', 'have', 'in', 'will', 'on', 'does',
-         'yourselves', 'then', 'that', 'because', 'what', 'over', 'why', 'so', 'can', 'did', 'not', 'now', 'under', 'he',
+         'all', 'when', 'at', 'any', 'before', 'them', 'same', 'and', 'been', 'have', 'in', 'will', 'on', 'does',
+         'yourselves', 'then', 'that', 'because', 'what', 'over', 'why', 'so', 'can', 'did', 'now', 'under', 'he',
          'you', 'herself', 'has', 'just', 'where', 'too', 'only', 'myself', 'which', 'those', 'i', 'after', 'few',
          'whom', 't', 'being', 'if', 'theirs', 'my', 'against', 'a', 'by', 'doing', 'it', 'how', 'further', 'was',
          'here', 'than', 'rt', "don't", '-', '&amp;', 'it’s', 'don’t', 'i’m', "it's", "doesn't",
@@ -270,8 +270,8 @@ class Parse:
         #print(term_dict)
         #print(full_text)
         #print(self.term_dict)
-
-        # if (tweet_id=='1288847567103635457' or tweet_id=='1288852809438437377' or tweet_id=='1288851580922535937' ):
+        #
+        # if (tweet_id=='1288850046860103680' or tweet_id=='1288848476936298496' or tweet_id=='1288846948242464768' or tweet_id=='1288847057768386560' or tweet_id=='1288851517232099334' ):
         #     print("--------------------------------------------")
         #     print(full_text)
 

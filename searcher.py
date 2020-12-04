@@ -39,24 +39,19 @@ class Searcher:
         """
 
         relevant_docs = []
+        self.parser.text_tokens = []
         query_tokens = self.parser.parse_sentence(query)
         new_query_tokens = []
         for token in query_tokens:
-            if not (token[0] == '@' or token[0] == '#' or token[0] == '%' or token[0] == '$' or '0' <= token[0] <= '9'):
+            if not ('@' in token or '#' in token or '$' in token or '%' in token):
                 token = token.lower()
-            if token == token.lower():
-                new_query_tokens.append(token)
-            elif token.lower() in self.inverted_idx:
-                new_query_tokens.append(token.lower())
-            else:
-                new_query_tokens.append(token)
+            new_query_tokens.append(token)
 
 
 
         # lda_model = LDAModel.lda_model
-        query_tokens = new_query_tokens
         dictquery = {new_query_tokens[i]: 0 for i in range(0, len(new_query_tokens))}
-        new_bow = self.dictionary.doc2bow(query_tokens)
+        new_bow = self.dictionary.doc2bow(new_query_tokens)
         topic_vector = self.lda_model.get_document_topics(bow=new_bow)
 
         mx = 0
@@ -72,16 +67,20 @@ class Searcher:
 
 
         for topicID, prob in topic_vector:
-            if prob > 0.75 or prob >= mx:
-                for doc in self.dict[topicID]:
+            if prob > 0.6 or prob >= mx:
+                if topicID not in self.dict:
+                    continue
+                for doc in list(self.dict[topicID]):
                     for term in self.documents[doc[0]][0]:
+                        if not ('@' in term or '#' in term or '$' in term or '%' in term):
+                            term = term.lower()
                         if term in dictquery:
                             relevant_docs.append(doc[0])
                             break
 
         #print(len(relevant_docs))
         #print(relevant_docs)
-        return relevant_docs, query_tokens
+        return relevant_docs, new_query_tokens
 
         # posting = utils.load_obj("posting")
         # relevant_docs = {}
