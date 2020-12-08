@@ -1,40 +1,70 @@
+import os
+import pickle
 import time
+import csv
+
 from LDAModel import LDA
 from reader import ReadFile
 from configuration import ConfigClass
 from parser_module import Parse
 from indexer import Indexer
 from smart_open import open
-import utils
-import os
-
 from searcher import Searcher
 
 
 def run_engine(corpus_path, output_path, stemming=False):
     """
+
+    :param corpus_path: path for parquet files
+    :param output_path: path to write pickle files
+    :param stemming: boolean to use stemming or not
     :return:
     """
+    s = time.time()
 
-    number_of_documents = 0
-
-    config = ConfigClass(corpus_path, output_path, stemming)
-    r = ReadFile(corpus_path=config.get__corpusPath())
+    ConfigClass(corpus_path, output_path, stemming)
+    r = ReadFile(corpus_path)
     p = Parse(stemming)
-    indexer = Indexer(corpus_path=config.get_savedFileMainFolder())
+    indexer = Indexer(output_path, stemming)
 
-    # start_reader = time.time()
-    documents_list = r.read_dir()
-    # end_reader = time.time() - start_reader
-    # print("Reader takes:" + str(end_reader) + "seconds")
+    if corpus_path.endswith('parquet'):
+        documents_list = r.read_file(corpus_path)
+        parseAndIndexDocuments(documents_list, p, indexer)
+    else:
+        documents_list = r.read_dir()
 
-    start_parsing = time.time()
+        while documents_list:
+            parseAndIndexDocuments(documents_list, p, indexer)
+            documents_list = r.read_dir()
     # Iterate over every document in the file
-    for idx, document in enumerate(documents_list):
-        if number_of_documents % 10000 == 0:
-            print(number_of_documents)
-        number_of_documents += 1
+    # documents_list = documents_list[:500]
 
+    d = time.time() - s
+    print("time to finish read parse index is  " + str(d))
+
+    documents_list.clear()
+    u = time.time()
+    indexer.merge_posting_files()
+    h = time.time() - u
+    print("time to finish merge is " + str(h))
+
+    j = time.time()
+    lda = LDA(output_path, indexer.dictdoc, stemming)
+
+    # lda.build_ldaModel()
+    lda.add_docs_to_model(indexer.datacounter)
+    p = time.time() - j
+    print("time to finish lda is " + str(p))
+
+    # x = str(indexer.numOfDucuments)
+    # en = time.time() - start
+    # print("the time takes the hole reader parser and indexer after merge files "
+    #       "and building the model for " + x + " documents are: " + str(en) + " sec")
+
+
+def parseAndIndexDocuments(documents_list, p, indexer):
+    # documents_list = documents_list[:20000]
+    for idx, document in enumerate(documents_list):
         # parse the document
         parsed_document = p.parse_doc(document)
         # parsed_document = p.parse_doc(documents_list[32841])
@@ -42,57 +72,84 @@ def run_engine(corpus_path, output_path, stemming=False):
         # index the document data
         indexer.add_new_doc(parsed_document)
 
-    end_parsing = time.time() - start_parsing
-    print("parser and indexing takes:" + str(end_parsing) + " seconds")
-    print('Finished parsing and indexing. Starting to export files')
 
-    indexer.merge_posting_files()
+def search_and_rank_query(query, num_docs_to_retrieve, searcher):
 
-    # utils.save_obj(indexer.inverted_idx, output_path + "\\inverted_idx")
-    # utils.save_obj(indexer.postingDict, output_path + "\\posting")
+    (relevant_docs, query_tokens, docslen) = searcher.relevant_docs_from_posting(query)
 
-    return indexer.lda.initialModel(output_path)
+    ranked_relevant_docs = searcher.ranker.rank_relevant_doc(relevant_docs, query_tokens, docslen)
 
+    most_relevent_docs = searcher.ranker.retrieve_top_k(ranked_relevant_docs, num_docs_to_retrieve)
 
-# def load_index(output_path):
-#     print('Load inverted index')
-#     inverted_index = utils.load_obj(output_path + "\\inverted_idx")
-#     return inverted_index
-
-
-def search_and_rank_query(query, num_docs_to_retrieve, p, output_path, lda):
-
-    searcher = Searcher(p, output_path, lda)
-    relevant_docs = searcher.relevant_docs_from_posting(query)
-    ranked_docs = searcher.ranker.rank_relevant_doc(relevant_docs)
-    return searcher.ranker.retrieve_top_k(ranked_docs, num_docs_to_retrieve)
+    return most_relevent_docs
 
 
 def main(corpus_path, output_path, stemming, queries, num_docs_to_retrieve=2000):
-    # with open(queries + '\\a.txt', 'r') as reader:
-    #     print(reader.read())
 
-    lda = run_engine(corpus_path, output_path, stemming)
-    print("start query")
-    # inverted_index = load_index(output_path)
+    if stemming:
+        output_path = output_path + '\\WithStem'
+    else:
+        output_path = output_path + '\\WithoutStem'
+
+
+    # if not (check_inverted_index() and check_ldaWithStem(output_path)):
+    # run_engine(corpus_path, output_path, stemming)
+
+    # print("start query")
+    # lda = 5
 
     pa = Parse(stemming)
+    searcher = Searcher(pa, output_path, stemming)
+    # searcher.ranker.load_docs_and_terms()
+    # write_result_to_csv()
     if isinstance(queries, list):
+        # j = 1
         for query in queries:
-            i = 0
-            print("the result for query: " + str(query) + " is:")
-            for tweetId in search_and_rank_query(query, num_docs_to_retrieve, pa, output_path, lda):
-                print(str(i) + '. tweet id: ' + str(tweetId[0]))
-                i += 1
+            # i = 0
+            # tweetid_rank = []
+            # print("the results for query: " + str(query) + ". are:")
+            for tweetId in search_and_rank_query(query, num_docs_to_retrieve, searcher):
+                # print('Tweet id: {' + str(tweetId[0]) + '} Score: {' + str(tweetId[1]) + '}')
+                # print(str(i) + '. tweet id: ' + str(tweetId[0]))
+                print("finish another query")
+                # print('Tweet id: ' + str(tweetId[0]) + ' Score: ' + str(tweetId[1]))
+                # tweetid_rank.append(tweetId)
+                # i += 1
+            # add_result_to_csv(j, tweetid_rank)
+            # j += 1
     else:
-        try:
-            f = open(queries, "r")
-            for query in f:
-                i = 0
-                print("the result for query: " + str(query) + " is:")
-                for tweetId in search_and_rank_query(query, num_docs_to_retrieve, pa, output_path, lda):
-                    print(str(i) + '. tweet id: ' + str(tweetId[0]))
-                    i += 1
-            f.close()
-        except:
-            print("not working")
+        # try:
+            file = open(queries, encoding="utf8")
+            j = 1
+            for line in file:
+                # i = 1
+                tweetid_rank = []
+                if line == '\n' or line == '':
+                    continue
+                line = str(line[3:-2])
+                print(str(j) + ". the results for query: " + line + ". are:")
+                for tweetId in search_and_rank_query(line, num_docs_to_retrieve, searcher):
+                    print('Tweet id: {' + str(tweetId[0]) + '} Score: {' + str(tweetId[1]) + '}') #goodddddddddd
+                    # print(str(i) + '. Tweet id: ' + str(tweetId[0]) + ' Score: ' + str(tweetId[1]))
+                    # print('Tweet id: ' + str(tweetId[0]) + ' Score: ' + str(tweetId[1]))
+                #     tweetid_rank.append(tweetId)
+                #     i += 1
+                # add_result_to_csv(j, tweetid_rank)
+                j += 1
+            file.close()
+        # except:
+        #     print("not working")
+#
+#
+def write_result_to_csv():
+    with open('results.csv', 'w', newline='') as file:
+        wr = csv.writer(file)
+        wr.writerow(['Query_num', 'Tweet_id', 'Rank'])
+
+
+def add_result_to_csv(numquery, tweetid_rank):
+    with open('results.csv', 'a', newline='') as file:
+        wr = csv.writer(file)
+        for item in tweetid_rank:
+            x = [str(numquery)] + item
+            wr.writerow(x)

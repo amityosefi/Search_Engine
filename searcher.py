@@ -1,20 +1,28 @@
 import pickle
-
-from parser_module import Parse
 from ranker import Ranker
-import utils
 
 
 class Searcher:
 
-    def _init_(self, parser, path, lda):
+    def __init__(self, parser, output_path, stem):
         """
         :param inverted_index: dictionary of inverted index
         """
         self.parser = parser
-        self.ranker = Ranker()
-        self.path = path
-        self.lda = lda
+        self.ranker = Ranker(output_path, stem)
+        self.path = output_path
+        self.counter = 1
+        self.stem = stem
+        self.lda_model = None
+        self.dictionary = None
+        self.dict = None
+        self.documents = None
+        self.docslen = 0
+        self.documentfilenames = {'zero_documents': 0 , 'first_documents': 0, 'second_documents': 0, 'third_documents': 0,
+                                  'fourth_documents': 0, 'fifth_documents': 0,
+                                  'sixth_documents': 0, 'seventh_documents': 0, 'eighth_documents': 0,
+                                  'ninth_documens': 0}
+
 
     def relevant_docs_from_posting(self, query):
         """
@@ -22,45 +30,84 @@ class Searcher:
         :param query: query
         :return: dictionary of relevant documents.
         """
-        # posting = utils.load_obj("posting.pkl")
-        print("start searcher")
+
+        relevant_docs = {}
+        self.parser.text_tokens = []
+        query_tokens = self.parser.parse_sentence(query)
+        new_query_tokens = []
+        for token in query_tokens:
+            if not ('@' in token or '#' in token or '$' in token or '%' in token):
+                token = token.lower()
+            new_query_tokens.append(token)
+
+        if self.stem:
+            with open('ldamodelwithstem.pkl', 'rb') as handle:
+                self.lda_model = pickle.load(handle)
+
+            with open('ldadictionarywithstem.pkl', 'rb') as handle:
+                self.dictionary = pickle.load(handle)
+
+        else:
+            with open('ldamodelwithoutstem.pkl', 'rb') as handle:
+                self.lda_model = pickle.load(handle)
+
+            with open('ldadictionarywithoutstem.pkl', 'rb') as handle:
+                self.dictionary = pickle.load(handle)
+
+        # lda_model = LDAModel.lda_model
+        dictquery = {new_query_tokens[i]: 0 for i in range(0, len(new_query_tokens))}
+        new_bow = self.dictionary.doc2bow(new_query_tokens)
+        topic_vector = self.lda_model.get_document_topics(bow=new_bow)
+        self.lda_model = None
+        self.dictionary = None
+        best_topic = 0
+        mx = 0
+        if len(topic_vector) > 1:
+            for topic in topic_vector:
+                if topic[1] > mx:
+                    mx = topic[1]
+                    best_topic = topic[0]
+
+        # print("the prob of the query is: " + str(mx))
+        with (open('searcher.pkl', "rb")) as openfile:
+            self.dict = pickle.load(openfile)
 
 
-        try: # an example of checks that you have to do
-            with (open(self.path + '\\searcher.pkl', "rb")) as openfile:
-                while True:
-                    try:
-                        objects = pickle.load(openfile)
-                    except EOFError:
-                        break
-        except:
-            print('term not found in posting')
+        # if len(self.dict[best_topic])<2000:
+        #     return self.dict, new_query_tokens
 
 
-        relevant_docs = []
+        for key in self.documentfilenames:
+            with (open(self.path + '\\' + key + '.pkl', "rb")) as openfile:
+                self.documents = pickle.load(openfile)
+            self.docslen += len(self.documents)
 
-        tokens = self.parser.parse_sentence(query)
-        self.lda.dictionary.add_documents([tokens])
-        self.lda.bow_corpus.append(self.lda.dictionary.doc2bow(tokens, allow_update=True))
-        topic_vector = self.lda.lda_model[self.bow_corpus[self.lda.counter]]
-        for topicID, prob in topic_vector:
-            if prob > 0.7:
-                relevant_docs.append(objects[topicID])
+
+            relevant_docs.update(self.find_relevant_docs_from_topics(topic_vector, dictquery, mx))
+
+        self.documents.clear()
+        self.dict.clear()
+
+        print("---------------------------------------------")
+        print("num of relevant docs:")
         print(len(relevant_docs))
-        return relevant_docs
 
+        return (relevant_docs, new_query_tokens, self.docslen)
 
-        # posting = utils.load_obj("posting")
-        # relevant_docs = {}
-        # for term in query:
-        #     try: # an example of checks that you have to do
-        #         posting_doc = posting[term]
-        #         for doc_tuple in posting_doc:
-        #             doc = doc_tuple[0]
-        #             if doc not in relevant_docs.keys():
-        #                 relevant_docs[doc] = 1
-        #             else:
-        #                 relevant_docs[doc] += 1
-        #     except:
-        #         print('term {} not found in posting'.format(term))
-        # return relevant_docs
+    def find_relevant_docs_from_topics(self, topic_vector, dictquery, mx):
+        tmp_relevant_docs = {}
+        for topicID, prob in topic_vector:
+            if prob > 0.4 or prob >= mx:
+                if topicID not in self.dict:
+                    continue
+                for doc in list(self.dict[topicID]):
+                    if doc[0] in self.documents:
+                        for term in self.documents[doc[0]][0]:
+                            if not ('@' in term or '#' in term or '$' in term or '%' in term):
+                                term = term.lower()
+                            if term in dictquery:
+                                # relevant_docs.append(doc[0])
+                                tmp_relevant_docs[doc[0]] = [self.documents[doc[0]][0], self.documents[doc[0]][1]]
+                                break
+
+        return tmp_relevant_docs

@@ -6,6 +6,7 @@ import pandas as pd
 class ReadFile:
     def __init__(self, corpus_path):
         self.corpus_path = corpus_path
+        self.docsfiles = {}
 
     def read_file(self, file_name):
         """
@@ -29,12 +30,17 @@ class ReadFile:
             if directories[i].endswith('parquet'):
                 filename = directories[i]
                 full_name = self.corpus_path + '\\' + filename
-                documents_list.extend(self.read_file(full_name))
-            else: # it is a dir
+                if full_name in self.docsfiles:
+                    continue
+                self.docsfiles[full_name] = ''
+                return self.read_file(full_name)
+            else:  # it is a dir
                 if not directories[i].endswith('DS_Store'):
                     for filename in os.listdir(self.corpus_path + '\\' + directories[i]):
                         if filename.endswith('parquet'):
                             full_name = directories[i] + '\\' + filename
-                            documents_list.extend(self.read_file(full_name))
-
+                            if full_name in self.docsfiles:
+                                continue
+                            self.docsfiles[full_name] = ''
+                            return self.read_file(full_name)
         return documents_list

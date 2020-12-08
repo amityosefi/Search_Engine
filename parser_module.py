@@ -5,19 +5,34 @@ from stemmer import Stemmer
 
 
 class Parse:
-    corpus_dict = {}
 
     def __init__(self, stem):
         self.stop_words = stopwords.words('english')
+        self.stop_words.extend(
+            ['ourselves', 'hers', 'between', 'yourself', 'but', 'again', 'there', 'about', 'once', 'during', 'out',
+             'very',
+             'having', 'with', 'they', 'own', 'an', 'be', 'some', 'for', 'do', 'its', 'yours', 'such', 'into', 'of',
+             'most',
+             'itself', 'other', 'off', 'is', 's', 'am', 'or', 'who', 'as', 'from', 'him', 'each', 'the', 'themselves',
+             'until', 'below', 'are', 'we', 'these', 'your', 'his', 'through', 'don', 'nor', 'me', 'were', 'her',
+             'more',
+             'himself', 'this', 'down', 'should', 'our', 'their', 'while', 'above', 'both', 'up', 'to', 'ours', 'had',
+             'she',
+             'all', 'when', 'at', 'any', 'before', 'them', 'same', 'and', 'been', 'have', 'in', 'will', 'on', 'does',
+             'yourselves', 'then', 'that', 'because', 'what', 'over', 'why', 'so', 'can', 'did', 'now', 'under', 'he',
+             'you', 'herself', 'has', 'just', 'where', 'too', 'only', 'myself', 'which', 'those', 'i', 'after', 'few',
+             'whom', 't', 'being', 'if', 'theirs', 'my', 'against', 'a', 'by', 'doing', 'it', 'how', 'further', 'was',
+             'here', 'than', 'rt', "don't", '-', '&amp;', 'it’s', 'don’t', 'i’m', "it's", "doesn't",
+             'https', 't.co', 'twitter.com', 'weve', 'ur', 'due', 'damn', 'us', 'theyre', 'would', 'might'])
         self.stop_words_dict = {self.stop_words[i]: 0 for i in range(0, len(self.stop_words))}
-        self.extra_stop_words = {"rt": 0, "https": 0, "t.co": 0, "twitter.com": 0, "weve": 0, "ur": 0, "due": 0, "damn": 0, "us": 0, "theyre": 0, "would": 0, "might": 0}
-        self.stop_words_dict.update(self.extra_stop_words)
+        # self.extra_stop_words = {"rt": 0, "https": 0, "t.co": 0, "twitter.com": 0, "weve": 0, "ur": 0, "due": 0, "damn": 0, "us": 0, "theyre": 0, "would": 0, "might": 0}
+        # self.stop_words_dict.update(self.extra_stop_words)
         self.term_dict = {}
         self.toStem = stem
         self.text_tokens = []
         if self.toStem:
             self.stemmer = Stemmer()
-        ##self.lancaster =LancasterStemmer()
+
 
     def parse_sentence(self, text):
 
@@ -26,8 +41,9 @@ class Parse:
         :param text:
         :return:
         """
-        text_splitted= text.split()
-        #stop_words = stopwords.words('english')
+
+        text_splitted = text.split()
+        # stop_words = stopwords.words('english')
         ##lancaster = LancasterStemmer()
         i = 0
         while i < len(text_splitted):
@@ -35,8 +51,9 @@ class Parse:
                 word = text_splitted[i].strip('[').strip(']').strip('(').strip(')').strip('{').strip('}')
                 word = re.sub('[^A-z-%_@#.,$!?/0-9]', '', word)
                 if word[len(word) - 1] == '%':
-                    new_word = word[:len(word)-1]
-                    if new_word.isdigit() or re.search(r'^-?[0-9]+\.[0-9]+$', new_word) or re.search(r'^-?[0-9]+\/[0-9]+$', new_word):
+                    new_word = word[:len(word) - 1]
+                    if new_word.isdigit() or re.search(r'^-?[0-9]+\.[0-9]+$', new_word) or re.search(
+                            r'^-?[0-9]+\/[0-9]+$', new_word):
                         number = self.parse_numbers(new_word)
                         percent_number = str(number) + '%'
                         self.text_tokens.append(percent_number)
@@ -72,7 +89,7 @@ class Parse:
                 i += 1
                 continue
 
-            word = re.sub(r'([-?!/,.]+)',r',',word)
+            word = re.sub(r'([-?!/,.]+)', r',', word)
             words = word.split(',')
             for word in words:
                 if (len(word) > 0) and (word.isspace() == False) and word.lower() not in self.stop_words_dict:
@@ -87,9 +104,9 @@ class Parse:
                         word = word[1:]
                         tags = word.split('@')
                         for t in tags:
-                           t = re.sub('[^A-z_0-9]', '', t)
-                           if t != '':
-                            self.parse_tags(t)
+                            t = re.sub('[^A-z_0-9]', '', t)
+                            if t != '':
+                                self.parse_tags(t)
                     elif word[0] == '"' or word[0] == "'" or word[0] == '‘' or word[0] == '’':
                         iterations = self.parse_quote(word, i, text_splitted)
                         i += iterations
@@ -106,38 +123,39 @@ class Parse:
         ##print(self.text_tokens)
 
     def parse_tags(self, word):
-        #word = re.sub('[^A-z$_0-9]', '', word)
         temp = re.sub('[^A-Za-z$0-9]', '', word)
         if temp != '':
-            t_word = '@' + str(word)
+            t_word = '@' + str(word.lower())
             self.text_tokens.append(t_word)
 
     def parse_quote(self, word, i, text_splitted):
 
-            start_iterations = i
-            word = str(word)
-            if word[len(word) - 1] == '"' or word[len(word) - 1] == "'" or word[len(word) - 1] == '‘' or word[len(word) - 1] == '’':
-                self.text_tokens.append(word.upper().strip('"').strip('"').strip('‘'))
-            else:
-                quote = word
-                while True:
-                    if i < len(text_splitted) - 1:
-                        next_word = re.sub('[^A-z%_@#.,!?$/0-9]', '', text_splitted[i + 1])
-                        if len(next_word) == 0:
-                            i += 1
-                        elif (next_word[len(next_word) - 1] == "'") or (next_word[len(next_word) - 1] == '"') or (next_word[len(next_word)-1] == '‘') and (next_word[len(next_word)-1] == '’'):
-                            quote += ' ' + next_word
-                            self.text_tokens.append(quote.upper().strip('"').strip("'").strip('‘').strip('’'))
-                            i += 1
-                            break
-                        else:
-                            quote += ' ' + next_word
-                            i += 1
-                    elif i == (len(text_splitted) - 1):
+        start_iterations = i
+        word = str(word)
+        if word[len(word) - 1] == '"' or word[len(word) - 1] == "'" or word[len(word) - 1] == '‘' or word[
+            len(word) - 1] == '’':
+            self.text_tokens.append(word.upper().strip('"').strip('"').strip('‘'))
+        else:
+            quote = word
+            while True:
+                if i < len(text_splitted) - 1:
+                    next_word = re.sub('[^A-z%_@#.,!?$/0-9]', '', text_splitted[i + 1])
+                    if len(next_word) == 0:
+                        i += 1
+                    elif (next_word[len(next_word) - 1] == "'") or (next_word[len(next_word) - 1] == '"') or (
+                            next_word[len(next_word) - 1] == '‘') and (next_word[len(next_word) - 1] == '’'):
+                        quote += ' ' + next_word
                         self.text_tokens.append(quote.upper().strip('"').strip("'").strip('‘').strip('’'))
+                        i += 1
                         break
+                    else:
+                        quote += ' ' + next_word
+                        i += 1
+                elif i == (len(text_splitted) - 1):
+                    self.text_tokens.append(quote.upper().strip('"').strip("'").strip('‘').strip('’'))
+                    break
 
-            return i - start_iterations + 1
+        return i - start_iterations + 1
 
     def parse_hashtags(self, element):
 
@@ -153,7 +171,7 @@ class Parse:
         word = re.sub('[^A-z$_0-9]', '', element)
         temp = re.sub('[^A-Za-z%$0-9]', '', word)
         if temp != '':
-            self.text_tokens.append('#'+element)
+            self.text_tokens.append('#' + element)
 
     def parse_url(self, url):
         name = ''
@@ -166,7 +184,7 @@ class Parse:
             elif (len(name) > 1) or (
                     (len(name) == 1) and ('a' <= name <= 'z') or ('A' <= name <= 'Z') or ('0' <= name <= '9')):
                 ##if name.isdigit():
-                  ##  name = self.parse_numbers(name)
+                ##  name = self.parse_numbers(name)
                 if name.lower() not in self.stop_words_dict and name != ' ':
                     if name not in self.term_dict:
                         self.term_dict[name] = 1
@@ -176,7 +194,7 @@ class Parse:
         if (len(name) > 1) or (
                 (len(name) == 1) and ('a' <= name <= 'z') or ('A' <= name <= 'Z') or ('0' <= name <= '9')):
             ##if name.isdigit():
-              ##  name = self.parse_numbers(name)
+            ##  name = self.parse_numbers(name)
             if name.lower() not in self.stop_words_dict and name != ' ':
                 if name not in self.term_dict:
                     self.term_dict[name] = 1
@@ -184,6 +202,9 @@ class Parse:
                     self.term_dict[name] += 1
 
     def parse_numbers(self, item, next_i=''):
+
+
+
         r = ['', 'K', 'M', 'B']
 
         if bool(re.search(r'^-?[0-9]+\.[0-9]+$', item)):
@@ -207,7 +228,6 @@ class Parse:
             if magnitude >= 3:
                 break
         return str("%.3f" % num).rstrip("0").rstrip(".") + '' + str(r[magnitude])
-
 
     def parse_doc(self, doc_as_list):
         """commi
@@ -237,9 +257,6 @@ class Parse:
             else:
                 self.term_dict[term] += 1
 
-            if term not in self.corpus_dict:
-                self.corpus_dict[term] = 1
-
         num_of_uniqe_terms = len(self.term_dict)
 
         max_tf = 0
@@ -260,9 +277,18 @@ class Parse:
             if (url_retweet_url is not None) and (url_retweet_url != '{}'):
                 self.parse_url(url_retweet_url)
 
-        #print(term_dict)
-        #print(full_text)
-        #print(self.term_dict)
+        # print(term_dict)
+        # print(full_text)
+        # print(self.term_dict)
+        #
+        # if (tweet_id=='1288850046860103680' or tweet_id=='1288848476936298496' or tweet_id=='1288846948242464768' or tweet_id=='1288847057768386560' or tweet_id=='1288851517232099334' ):
+        #     print("--------------------------------------------")
+        #     print(full_text)
+
+
+
+
+
         document = Document(tweet_id, tweet_date, full_text, url, retweet_text, retweet_url, quote_text,
                             quote_url, self.term_dict, doc_length, max_tf, num_of_uniqe_terms, self.text_tokens)
 
