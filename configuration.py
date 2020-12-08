@@ -7,8 +7,8 @@ class ConfigClass:
     def get__corpusPath(self):
         return self.corpusPath
 
-    # def get_savedFileMainFolder(self):
-    #     return self.savedFileMainFolder
+    def get_savedFileMainFolder(self):
+        return self.savedFileMainFolder
 
     def get_toStem(self):
         return self.toStem

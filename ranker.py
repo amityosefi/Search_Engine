@@ -1,31 +1,20 @@
+import math
 import pickle
 from math import sqrt
+import searcher
 
 
 class Ranker:
-    def __init__(self, output_path):
+    def __init__(self, output_path, stem):
         self.output_path = output_path
         self.terms_dict = {}
         self.documents = {}
-        self.common = {}
-
-    def load_docs_and_terms(self):
-
-        with (open(self.output_path + '\\documents.pkl', "rb")) as openfile:
-            while True:
-                try:
-                    self.documents = pickle.load(openfile)
-                except EOFError:
-                    break
-
-        with (open(self.output_path + '\\common.pkl', "rb")) as openfile:
-            while True:
-                try:
-                    self.common = pickle.load(openfile)
-                except EOFError:
-                    break
-        self.terms_dict.update(self.common)
-
+        if stem:
+            with open('inverted_idxwithstem.pkl', 'rb') as handle:
+                self.inverted_idx = pickle.load(handle)
+        else:
+            with open('inverted_idxwithoutstem.pkl', 'rb') as handle:
+                self.inverted_idx = pickle.load(handle)
 
     def find_posting_name(self, term):
 
@@ -50,7 +39,7 @@ class Ranker:
 
         return posting_name
 
-    def rank_relevant_doc(self, relevant_doc, query_tokens):
+    def rank_relevant_doc(self, relevant_doc, query_tokens, docslen):
         """
         This function provides rank for each relevant document and sorts them by their scores.
         The current score considers solely the number of terms shared by the tweet (full_text) and query.
@@ -58,59 +47,68 @@ class Ranker:
         :param relevant_doc: dictionary of documents that contains at least one term from the query.
         :return: sorted list of documents by score
         """
+        documentsLen = docslen
+        self.documents = relevant_doc
 
         query_tokens_dict = {query_tokens[i]: 0 for i in range(0, len(query_tokens))}
-
         cosSimilarity_list = []
         num_of_query_tokens = len(query_tokens_dict)
 
         for document in relevant_doc:
-            # print(query_tokens_dict)
             sum_weights = 0
-            sum_of_squared_weights = 0
             num_of_same_tokens = 0
-            #document = str(document)
-            doc_terms_dict = self.documents[document][0]
-            # print(doc_terms_dict)
-            for term in query_tokens_dict:
-                #term = str(term)
-                # if term not in query_tokens_dict:
-                #     num_of_query_tokens -= 1
-                #     if num_of_query_tokens == 0:
-                #         break
-                if term in doc_terms_dict:
-                    if term in self.terms_dict:
-                        term_weight = (float(self.terms_dict[term][document]) * float(self.terms_dict[term]['idf']))
-                        sum_weights += term_weight  # *1 of query
-                        sum_of_squared_weights += pow(term_weight, 2)
-                        num_of_same_tokens += 1
-                    else:
-                        posting_name = self.find_posting_name(term)
-                        with (open(self.output_path + '\\' + posting_name + '.pkl', "rb")) as openfile:
-                            while True:
-                                try:
-                                    additional_terms_dict = pickle.load(openfile)
-                                except EOFError:
-                                    break
-                        term_weight = float(additional_terms_dict[term][document]) * float(additional_terms_dict[term]['idf'])
-                        sum_weights += term_weight  # *1 of query
-                        sum_of_squared_weights += pow(term_weight, 2)
-                        self.terms_dict.update(additional_terms_dict)
-                        num_of_same_tokens += 1
-            if sum_weights != 0:
-                sum_of_squared_weights = sum_of_squared_weights * num_of_query_tokens
-                sum_of_squared_weights = sqrt(sum_of_squared_weights)
-                cosSimilarity_calculate = float("%.5f" % (sum_weights / sum_of_squared_weights))
+            total_squerded_weights = 0
+            doc_terms_dict = self.documents[document][0] #documnts dictionary terms
+            max_tf = self.documents[document][1] #max tf
+            cosSimilarity_calculate = 0
+            for term in doc_terms_dict:
+                origin_term = term
+                if not ('@' in term or '#' in term or '$' in term or '%' in term):
+                    term = term.lower()
+                x = float(documentsLen)
+                y = float(self.inverted_idx[term][0])
+                z = float(doc_terms_dict[origin_term])
+                idf = float(math.log(float(documentsLen)/float(self.inverted_idx[term][0]), 2))
+                tf = float(doc_terms_dict[origin_term])/float(max_tf)
+                term_weight = tf * idf
+                squared_weights = term_weight ** 2
+                # if term in self.terms_dict:
+                #     term_weight = float(self.terms_dict[term][document]) * float(self.terms_dict[term]['idf'])
+                #     squared_weights = term_weight**2
+                # else:
+                #     try:
+                #         posting_name = self.find_posting_name(term)
+                #     except:
+                #         continue
+                #     additional_terms_dict = {}
+                #     self.terms_dict.clear()
+                #     with (open(self.output_path + '\\' + posting_name + '.pkl', "rb")) as openfile:
+                #         additional_terms_dict = pickle.load(openfile)
+                #
+                #     term_weight = float(additional_terms_dict[term][document]) * float(additional_terms_dict[term]['idf'])
+                #     squared_weights = term_weight**2
+                # for word in additional_terms_dict:
+                #     if word not in self.terms_dict:
+                #         self.terms_dict[word] = additional_terms_dict[word]
+                # self.terms_dict.update(additional_terms_dict)
+                # additional_terms_dict.clear()
+                if term in query_tokens_dict:
+                    sum_weights += term_weight # *1 of query
+                    num_of_same_tokens += 1
+                total_squerded_weights += squared_weights
+            if num_of_same_tokens != 0:
+                # total_squerded_weights = (sqrt(total_squerded_weights)) * (sqrt(num_of_same_tokens))
+                total_squerded_weights = sqrt(total_squerded_weights * num_of_query_tokens)
+                cosSimilarity_calculate = float("%.5f" % (sum_weights / total_squerded_weights))
             else:
                 cosSimilarity_calculate = 0
-            # print(cosSimilarity_calculate)
+
             cosSimilarity_list.append([document, cosSimilarity_calculate])
 
+        # if len(self.terms_dict) >= 55000:
+        # self.terms_dict.clear()
 
         cosSimilarity_list.sort(key=lambda x: float(x[1]), reverse= True)
-        # sort = sorted_relevant_docs[:20]
-        # for doc in sort:
-        #     print(doc + "with rank of" + str(cosSimilarity_dict[doc]))
         return cosSimilarity_list
 
         # return sorted(relevant_doc.items(), key=lambda item: item[1], reverse=True)
