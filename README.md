@@ -14,5 +14,6 @@ Meanwhile the searcher sends the ranker each twitt and by cossime gets a rank.
 First 100 twitts with the best score are save in a csv file.
 
 #technology
+
 * Based on python 3.7
 * Needs to install gensim package
