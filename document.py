@@ -27,3 +27,6 @@ class Document:
         self.max_tf = max_tf
         self.num_of_unique_words = num_of_unique_words
         self.text_tokens = text_tokens
+        self.max_tf = max_tf
+        self.num_of_unique_words = num_of_unique_words
+        self.text_tokens = text_tokens
