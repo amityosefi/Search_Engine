@@ -16,4 +16,4 @@ First 100 twitts with the best score are save in a csv file.
 #technology
 
 * Based on python 3.7
-* Needs to install gensim package
+* Needs to install all packages in requirements.txt file
